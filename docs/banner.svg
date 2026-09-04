@@ -1,75 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" role="img" aria-label="Night Drop">
-  <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#070b14"/>
-      <stop offset="55%" stop-color="#10182a"/>
-      <stop offset="100%" stop-color="#1a1420"/>
-    </linearGradient>
-    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#f0a030" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#f0a030" stop-opacity=".55"/>
-      <stop offset="100%" stop-color="#f0a030" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0c1018"/>
-      <stop offset="100%" stop-color="#05070c"/>
-    </linearGradient>
-    <filter id="soft">
-      <feGaussianBlur stdDeviation="8"/>
-    </filter>
-  </defs>
-  <rect width="1280" height="420" fill="url(#sky)"/>
-  <circle cx="1080" cy="70" r="90" fill="#f0a030" opacity=".08" filter="url(#soft)"/>
-  <g opacity=".9">
-    <rect x="40" y="168" width="52" height="172" fill="#121a2c"/>
-    <rect x="102" y="128" width="70" height="212" fill="#182238"/>
-    <rect x="184" y="148" width="58" height="192" fill="#141e32"/>
-    <rect x="252" y="108" width="86" height="232" fill="#1c2740"/>
-    <rect x="348" y="158" width="48" height="182" fill="#121a2c"/>
-    <rect x="820" y="138" width="64" height="202" fill="#141e32"/>
-    <rect x="894" y="98" width="92" height="242" fill="#1c2740"/>
-    <rect x="996" y="148" width="56" height="192" fill="#121a2c"/>
-    <rect x="1062" y="118" width="78" height="222" fill="#182238"/>
-    <rect x="1150" y="168" width="70" height="172" fill="#141e32"/>
-  </g>
-  <g fill="#f0d060" opacity=".55">
-    <rect x="112" y="148" width="6" height="10" rx="1"/>
-    <rect x="128" y="148" width="6" height="10" rx="1"/>
-    <rect x="144" y="148" width="6" height="10" rx="1"/>
-    <rect x="112" y="172" width="6" height="10" rx="1"/>
-    <rect x="128" y="172" width="6" height="10" rx="1"/>
-    <rect x="144" y="172" width="6" height="10" rx="1"/>
-    <rect x="268" y="128" width="7" height="12" rx="1"/>
-    <rect x="286" y="128" width="7" height="12" rx="1"/>
-    <rect x="304" y="128" width="7" height="12" rx="1"/>
-    <rect x="268" y="154" width="7" height="12" rx="1"/>
-    <rect x="286" y="154" width="7" height="12" rx="1"/>
-    <rect x="304" y="154" width="7" height="12" rx="1"/>
-    <rect x="910" y="118" width="8" height="13" rx="1"/>
-    <rect x="930" y="118" width="8" height="13" rx="1"/>
-    <rect x="950" y="118" width="8" height="13" rx="1"/>
-    <rect x="910" y="146" width="8" height="13" rx="1"/>
-    <rect x="930" y="146" width="8" height="13" rx="1"/>
-    <rect x="950" y="146" width="8" height="13" rx="1"/>
-    <rect x="1076" y="138" width="7" height="12" rx="1"/>
-    <rect x="1094" y="138" width="7" height="12" rx="1"/>
-    <rect x="1112" y="138" width="7" height="12" rx="1"/>
-  </g>
-  <rect x="0" y="338" width="1280" height="82" fill="url(#road)"/>
-  <rect x="0" y="336" width="1280" height="2" fill="#f0a030" opacity=".35"/>
-  <g stroke="#d8c070" stroke-width="3" stroke-dasharray="28 22" opacity=".45">
-    <line x1="0" y1="380" x2="1280" y2="380"/>
-  </g>
-  <g transform="translate(560 348)">
-    <path d="M-54 22 L-38 -8 H38 L54 22 Z" fill="#f0a030"/>
-    <rect x="-22" y="-2" width="44" height="14" rx="3" fill="#0b1020"/>
-    <circle cx="-32" cy="24" r="8" fill="#1c1f26"/>
-    <circle cx="32" cy="24" r="8" fill="#1c1f26"/>
-    <circle cx="-32" cy="24" r="3.2" fill="#8a909a"/>
-    <circle cx="32" cy="24" r="3.2" fill="#8a909a"/>
-  </g>
-  <rect x="180" y="312" width="920" height="3" fill="url(#glow)"/>
-  <text x="640" y="86" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial" font-size="22" letter-spacing="10" fill="#f0a030">OPEN WORLD  ·  OPEN SOURCE</text>
-  <text x="640" y="168" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial" font-size="92" font-weight="700" fill="#f4f1ea">NIGHT DROP</text>
-  <text x="640" y="218" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial" font-size="22" letter-spacing="4" fill="#c9d0dc">Steal the coupe. Lose the heat. Make the drop.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420">
+  <rect width="1280" height="420" fill="#0b1020"/>
+  <rect x="40" y="168" width="52" height="172" fill="#121a2c"/>
+  <rect x="102" y="128" width="70" height="212" fill="#182238"/>
+  <rect x="184" y="148" width="58" height="192" fill="#141e32"/>
+  <rect x="252" y="108" width="86" height="232" fill="#1c2740"/>
+  <rect x="348" y="158" width="48" height="182" fill="#121a2c"/>
+  <rect x="820" y="138" width="64" height="202" fill="#141e32"/>
+  <rect x="894" y="98" width="92" height="242" fill="#1c2740"/>
+  <rect x="996" y="148" width="56" height="192" fill="#121a2c"/>
+  <rect x="1062" y="118" width="78" height="222" fill="#182238"/>
+  <rect x="1150" y="168" width="70" height="172" fill="#141e32"/>
+  <rect x="112" y="148" width="6" height="10" rx="1" fill="#f0d060"/>
+  <rect x="128" y="148" width="6" height="10" rx="1" fill="#f0d060"/>
+  <rect x="144" y="148" width="6" height="10" rx="1" fill="#f0d060"/>
+  <rect x="112" y="172" width="6" height="10" rx="1" fill="#f0d060"/>
+  <rect x="128" y="172" width="6" height="10" rx="1" fill="#f0d060"/>
+  <rect x="144" y="172" width="6" height="10" rx="1" fill="#f0d060"/>
+  <rect x="268" y="128" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="286" y="128" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="304" y="128" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="268" y="154" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="286" y="154" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="304" y="154" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="910" y="118" width="8" height="13" rx="1" fill="#f0d060"/>
+  <rect x="930" y="118" width="8" height="13" rx="1" fill="#f0d060"/>
+  <rect x="950" y="118" width="8" height="13" rx="1" fill="#f0d060"/>
+  <rect x="910" y="146" width="8" height="13" rx="1" fill="#f0d060"/>
+  <rect x="930" y="146" width="8" height="13" rx="1" fill="#f0d060"/>
+  <rect x="950" y="146" width="8" height="13" rx="1" fill="#f0d060"/>
+  <rect x="1076" y="138" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="1094" y="138" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="1112" y="138" width="7" height="12" rx="1" fill="#f0d060"/>
+  <rect x="0" y="338" width="1280" height="82" fill="#05070c"/>
+  <rect x="0" y="336" width="1280" height="2" fill="#f0a030"/>
+  <line x1="0" y1="380" x2="1280" y2="380" stroke="#d8c070" stroke-width="3" stroke-dasharray="28 22"/>
+  <path d="M586 370 L602 340 H678 L694 370 Z" fill="#f0a030"/>
+  <rect x="618" y="346" width="44" height="14" rx="3" fill="#0b1020"/>
+  <circle cx="608" cy="372" r="8" fill="#1c1f26"/>
+  <circle cx="672" cy="372" r="8" fill="#1c1f26"/>
+  <circle cx="608" cy="372" r="3" fill="#8a909a"/>
+  <circle cx="672" cy="372" r="3" fill="#8a909a"/>
+  <rect x="180" y="312" width="920" height="3" fill="#f0a030"/>
+  <text x="640" y="86" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#f0a030">OPEN WORLD - OPEN SOURCE</text>
+  <text x="640" y="168" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="92" font-weight="700" fill="#f4f1ea">NIGHT DROP</text>
+  <text x="640" y="218" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#c9d0dc">Steal the coupe. Lose the heat. Make the drop.</text>
 </svg>

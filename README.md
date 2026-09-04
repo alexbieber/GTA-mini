@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="Night Drop — Steal the coupe. Lose the heat. Make the drop." width="100%">
+  <img src="docs/media/play_city.png" alt="Night Drop — driving the amber coupe through the harbor grid at night" width="100%">
 </p>
 
 <p align="center">
