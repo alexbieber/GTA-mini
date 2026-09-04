@@ -1,0 +1,13 @@
+Photoscanned textures and HDRIs from Poly Haven (https://polyhaven.com/)
+License: CC0 1.0 — public domain. No attribution required.
+This project is Powered by Poly Haven.
+
+Used assets:
+  asphalt_01, red_brick, red_brick_03, painted_plaster_wall,
+  cracked_concrete_wall, concrete_pavement, metal_plate,
+  wood_floor_deck, aerial_grass_rock, beige_wall_001,
+  green_metal_rust, roof_09, bitumen
+  HDRIs: wide_street_01, shanghai_bund
+
+Cars and people: Kenney.nl (CC0)
+Building facades are generated from the Poly Haven wall scans.

@@ -1,0 +1,42 @@
+name: Bug
+description: Something in the harbor is broken
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      options:
+        - Godot (repo root)
+        - Unity (NightDropUnity)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      placeholder: I jacked the coupe, heat stayed at 0, cops never spawned.
+    validations:
+      required: true
+  - type: textarea
+    id: expect
+    attributes:
+      label: What should happen
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Play main.tscn
+        2. Steal the coupe
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: godot
+    attributes:
+      label: Godot / Unity version
+      placeholder: Godot 4.7 / Unity 6000.0.82f1

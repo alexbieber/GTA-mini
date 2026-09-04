@@ -1,0 +1,9 @@
+.godot/
+export/
+*.tmp
+.DS_Store
+android/build/
+*.apk
+*.aab
+*.ipa
+.cursor/

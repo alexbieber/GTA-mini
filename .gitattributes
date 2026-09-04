@@ -1,0 +1,3 @@
+# Night Drop — linguist hints
+*.gd linguist-language=GDScript
+NightDropUnity/** linguist-vendored=false

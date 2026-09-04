@@ -1,0 +1,43 @@
+name: Feature
+description: A system, district, or loop the game does not have yet
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      options:
+        - Godot (repo root)
+        - Unity (NightDropUnity)
+        - Either / docs
+    validations:
+      required: true
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      options:
+        - good first issue (an evening)
+        - help wanted (a weekend)
+        - epic (needs a design thread first)
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why the city needs this
+      placeholder: Pedestrians ignore gunfire, so heat never feels witnessed.
+    validations:
+      required: true
+  - type: textarea
+    id: play
+    attributes:
+      label: How a player notices it
+      placeholder: Fire the pistol near a sidewalk. Nearby peds flee. Radar blips scatter.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Original IP only. Do not propose copying another studio's names, maps, vehicles, or missions.

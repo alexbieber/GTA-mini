@@ -1,0 +1,16 @@
+Night Drop third-party assets (all CC0 / public domain unless noted)
+
+Cars
+- Kenney Car Kit — kenney.nl/assets/car-kit — CC0
+- Quaternius Cars Pack — quaternius.com/packs/cars.html — CC0
+
+People
+- Kenney Animated Characters — kenney.nl — CC0
+- Quaternius Animated Man / Animated Woman — quaternius.com — CC0
+
+Aircraft
+- Antonov An-2 lowpoly — OpenGameArt (an-2 airplane lowpoly) — CC0
+- Jumbo jet OBJ — OpenGameArt (Jumbo Jet, Wide Body, NuclearOsmosis) — CC0
+
+Environment
+- Poly Haven PBR + HDRIs — polyhaven.com — CC0
