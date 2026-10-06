@@ -468,6 +468,9 @@ func _try_fire() -> void:
 	var cam := camera.camera()
 	if cam == null:
 		return
+	# The shot itself is the warning. React at the muzzle so misses and hits
+	# produce the same witness behaviour instead of waiting for a heat rank-up.
+	_scare_nearby(player.global_position)
 	var origin := cam.global_position
 	var dir := -cam.global_transform.basis.z
 	dir += cam.global_transform.basis.x * randf_range(-spec["spread"], spec["spread"])
@@ -484,7 +487,6 @@ func _try_fire() -> void:
 		if col is Pedestrian:
 			var ped := col as Pedestrian
 			ped.knock_down()
-			_scare_nearby(ped.global_position)
 			if ped.is_officer:
 				_report("shoot_cop", ped.global_position)
 			else:
