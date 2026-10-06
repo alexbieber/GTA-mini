@@ -20,6 +20,7 @@ var _crime: Label
 var _weapon: Label
 var _speed: Label
 var radar: Radar
+var _heat_punch: Tween
 
 
 func _ready() -> void:
@@ -49,11 +50,38 @@ func set_objective(text: String) -> void:
 	_objective.text = text
 
 
-func set_wanted(stars: int) -> void:
+func set_wanted(stars: int, rank_delta := 0) -> void:
 	if stars <= 0:
 		_stars.text = ""
+		_reset_heat_punch()
 		return
 	_stars.text = "HEAT  " + "◆".repeat(stars) + "◇".repeat(maxi(0, 5 - stars))
+	if rank_delta > 0:
+		_punch_heat()
+
+
+func _punch_heat() -> void:
+	if _heat_punch and _heat_punch.is_valid():
+		_heat_punch.kill()
+	_stars.pivot_offset = _stars.size * 0.5
+	_stars.scale = Vector2.ONE
+	_stars.modulate = Color.WHITE
+	_heat_punch = create_tween()
+	_heat_punch.set_parallel(true)
+	_heat_punch.tween_property(_stars, "scale", Vector2(1.32, 1.32), 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_heat_punch.tween_property(_stars, "modulate", Color("fff1a8"), 0.07)
+	_heat_punch.chain().set_parallel(true)
+	_heat_punch.tween_property(_stars, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_heat_punch.tween_property(_stars, "modulate", Color.WHITE, 0.22)
+
+
+func _reset_heat_punch() -> void:
+	if _heat_punch and _heat_punch.is_valid():
+		_heat_punch.kill()
+	_heat_punch = null
+	if _stars:
+		_stars.scale = Vector2.ONE
+		_stars.modulate = Color.WHITE
 
 
 func set_prompt(text: String) -> void:
