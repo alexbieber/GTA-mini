@@ -85,8 +85,7 @@ namespace NightDrop.UI
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
             text.fontSize = 28;
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf")
-                        ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
         static GameObject Panel(string name, Transform parent, Vector2 size, Vector2 anchor, Vector2 anchoredPos)
