@@ -1,7 +1,7 @@
 class_name MatchConfig
 extends Resource
 @export_range(1, 8) var team_size := 5
-@export_range(2, 24) var battle_participants := 10
+@export_range(2, 24) var battle_participants := 8
 @export var countdown_seconds := 3.0
 @export var duration_seconds := 600.0
 @export var winning_score := 5
@@ -15,3 +15,4 @@ extends Resource
 @export var bot_accuracy := 0.7
 @export var melee_damage := 35.0
 @export var melee_interval := 0.7
+@export var capture_requires_home := true

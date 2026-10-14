@@ -1,6 +1,8 @@
 class_name MatchHUD
 extends CanvasLayer
 var selected_team := 1
+var selected_weapon := Arsenal.Id.RIFLE
+var _settings_scroll: ScrollContainer
 var _menu: PanelContainer
 var _menu_content: VBoxContainer
 var _settings_content: VBoxContainer
@@ -93,15 +95,27 @@ func _build_menu() -> void:
 	team.custom_minimum_size.y = 42
 	team.item_selected.connect(func(index: int) -> void: selected_team = team.get_item_id(index))
 	_menu_content.add_child(team)
+	var primary := OptionButton.new()
+	primary.add_item("PRIMÁRIA · FUZIL", Arsenal.Id.RIFLE)
+	primary.add_item("PRIMÁRIA · SUBMETRALHADORA", Arsenal.Id.SMG)
+	primary.add_item("PRIMÁRIA · ESCOPETA", Arsenal.Id.SHOTGUN)
+	primary.custom_minimum_size.y = 36
+	primary.item_selected.connect(func(index: int) -> void: selected_weapon = primary.get_item_id(index))
+	_menu_content.add_child(primary)
 	button("FAVELA ROYALE · 10 PARTICIPANTES", func() -> void: game().start_mode(MatchRules.Mode.BATTLE), _menu_content)
 	button("PROTEGE O CORRE! · 5v5", func() -> void: game().start_mode(MatchRules.Mode.CORRE), _menu_content)
 	button("CONFIGURAÇÕES", _show_settings, _menu_content)
 	button("SAIR", func() -> void: get_tree().quit(), _menu_content)
 	_menu_content.add_child(label("Sem conexão online · escolha equipe/personagem acima", 14))
+	_settings_scroll = ScrollContainer.new()
+	_settings_scroll.custom_minimum_size = Vector2(560, 450)
+	_settings_scroll.visible = false
+	box.add_child(_settings_scroll)
 	_settings_content = VBoxContainer.new()
+	_settings_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_settings_content.add_theme_constant_override("separation", 8)
 	_settings_content.visible = false
-	box.add_child(_settings_content)
+	_settings_scroll.add_child(_settings_content)
 
 func _show_settings() -> void:
 	for child in _settings_content.get_children():
@@ -109,6 +123,7 @@ func _show_settings() -> void:
 		child.queue_free()
 	_menu_content.visible = false
 	_settings_content.visible = true
+	_settings_scroll.visible = true
 	_settings_content.add_child(label("CONFIGURAÇÕES", 24))
 	var view := CheckButton.new()
 	view.text = "Câmera em primeira pessoa"
@@ -117,6 +132,16 @@ func _show_settings() -> void:
 		game().camera.set_first_person(on)
 		game().save_settings())
 	_settings_content.add_child(view)
+	_settings_content.add_child(label("Campo de visão (FOV)", 16))
+	var fov := HSlider.new()
+	fov.min_value = 70
+	fov.max_value = 110
+	fov.step = 1
+	fov.value = game().camera.first_person_fov
+	fov.value_changed.connect(func(value: float) -> void:
+		game().camera.first_person_fov = value
+		game().save_settings())
+	_settings_content.add_child(fov)
 	var quality := OptionButton.new()
 	for text in ["LOW", "MEDIUM", "HIGH"]: quality.add_item(text)
 	quality.select(game().clock.quality)
@@ -187,6 +212,7 @@ func _show_settings() -> void:
 			binding.text = "Pressione tecla/botão · Esc cancela")
 	button("VOLTAR", func() -> void:
 		_settings_content.visible = false
+		_settings_scroll.visible = false
 		_menu_content.visible = true
 		_waiting_action = "", _settings_content)
 
@@ -283,6 +309,7 @@ func show_start(on: bool) -> void:
 	if on:
 		_menu_content.visible = true
 		_settings_content.visible = false
+		_settings_scroll.visible = false
 
 func show_results(on: bool) -> void:
 	_results.visible = on

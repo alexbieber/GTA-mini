@@ -125,10 +125,18 @@ func capture(id: int) -> bool:
 	var item := carried_by(id)
 	if item == null or item.owner == member.team or member.position.distance_to(bases[member.team]) > config.capture_distance:
 		return false
+	if config.capture_requires_home:
+		var home := false
+		for own: ObjectiveState in objectives.values():
+			if own.owner == member.team:
+				if own.state != ObjectiveState.Status.AT_BASE: return false
+				home = true
+		if not home: return false
 	item.state = ObjectiveState.Status.CAPTURED
 	item.carrier = -1
 	item.remaining = 2.0
 	score[member.team] += item.points
+	if config.capture_requires_home: item.reset()
 	event.emit("OBJECTIVE_CAPTURED", {"participant": id, "team": member.team, "score": score.duplicate()})
 	if score[member.team] >= config.winning_score:
 		finish(member.team)

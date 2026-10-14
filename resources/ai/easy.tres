@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BotDifficulty" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/ai/bot_difficulty.gd" id="1"]
+[resource]
+script = ExtResource("1")
+label = "Fácil"
+field_of_view = 90.0
+sight_range = 32.0
+hearing_range = 28.0
+reaction_seconds = 0.6
+accuracy = 0.45
+fire_interval = 0.9
+damage_multiplier = 0.75
+decision_interval = 0.34
+memory_seconds = 3.0

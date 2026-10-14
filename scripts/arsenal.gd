@@ -1,14 +1,14 @@
 class_name Arsenal
 extends Object
 
-enum Id { NONE, PISTOL, SMG, RIFLE }
+enum Id { NONE, PISTOL, SMG, RIFLE, SHOTGUN }
 
 static var _data: Dictionary = {}
 
 static func data(id: int) -> WeaponData:
 	if _data.has(id):
 		return _data[id]
-	var paths := {Id.PISTOL: "pistol", Id.SMG: "smg", Id.RIFLE: "rifle"}
+	var paths := {Id.PISTOL: "pistol", Id.SMG: "smg", Id.RIFLE: "rifle", Id.SHOTGUN: "shotgun"}
 	var item := load("res://resources/weapons/%s.tres" % paths.get(id, "pistol")) as WeaponData
 	_data[id] = item
 	return item

@@ -13,3 +13,5 @@ extends Resource
 @export var pickup_radius := 1.4
 @export var mantle_maximum_height := 1.2
 @export var mantle_reach := 1.9
+@export var acceleration := 26.0
+@export var deceleration := 34.0

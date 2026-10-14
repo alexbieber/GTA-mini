@@ -20,6 +20,7 @@ var ads_fov := 48.0
 var recoil := Vector2.ZERO
 var recoil_strength := 1.0
 var first_person := false
+var first_person_fov := 86.0
 var _view_model: Node3D
 var _view_gun: Node3D
 var _view_plate: MeshInstance3D
@@ -148,7 +149,7 @@ func _process_first_person(player: Player, delta: float) -> void:
 	_cam.global_position = global_position
 	_cam.global_rotation = Vector3(clampf(pitch + recoil.y, -1.4, 1.4), yaw + recoil.x, 0)
 	_cam.near = 0.05
-	var fov := lerpf(86.0, 62.0, ads_blend) + (5.0 if player.sprinting else 0.0)
+	var fov := lerpf(first_person_fov, first_person_fov * 0.72, ads_blend) + (5.0 if player.sprinting else 0.0)
 	_cam.fov = lerpf(_cam.fov, fov, 1.0 - exp(-14.0 * delta))
 	_cam.h_offset = 0.0
 	_cam.v_offset = 0.0

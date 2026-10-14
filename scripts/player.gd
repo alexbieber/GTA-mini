@@ -18,7 +18,7 @@ var health: float:
 var stamina := 100.0
 var weapon := Arsenal.Id.NONE
 var owned_weapons: Array[int] = []
-var ammo := {1: 0, 2: 0, 3: 0}
+var ammo := {1: 0, 2: 0, 3: 0, 4: 0}
 var magazines: Dictionary = {}
 var reload_remaining := 0.0
 var _reload_weapon := Arsenal.Id.NONE
@@ -147,7 +147,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = 0.0
 	var cam := get_tree().get_first_node_in_group("camera_rig") as CameraRig
-	var yaw := cam.yaw if cam else rotation.y
+	var yaw := control_yaw()
 	var input := _move_input()
 	var basis := Basis(Vector3.UP, yaw)
 	var dir := (basis * Vector3(input.x, 0, input.y))
@@ -161,7 +161,8 @@ func _physics_process(delta: float) -> void:
 			dir = tangent * dir.dot(tangent)
 	var touch := get_tree().get_first_node_in_group("touch") as TouchControls
 	var sprint_input := Input.is_action_pressed("sprint") or (touch != null and touch.sprint)
-	var want_sprint := (sprint_input or tactical_remaining > 0.0) and stamina > 4.0 and not aiming and not crouched and not in_cover and reload_remaining <= 0.0 and plate_remaining <= 0.0 and _sprint_block_remaining <= 0.0
+	var fire_held := Input.is_action_pressed("fire") or (touch != null and touch.firing)
+	var want_sprint := (sprint_input or tactical_remaining > 0.0) and stamina > 4.0 and not aiming and not crouched and not in_cover and reload_remaining <= 0.0 and plate_remaining <= 0.0 and _sprint_block_remaining <= 0.0 and (tactical == null or not fire_held)
 	sprinting = want_sprint and dir.length_squared() > 0.05
 	if want_sprint and dir.length_squared() > 0.05:
 		stamina = maxf(stamina - 18.0 * delta, 0.0)
@@ -180,8 +181,14 @@ func _physics_process(delta: float) -> void:
 		slide_remaining = maxf(slide_remaining - delta, 0.0)
 		dir = _slide_direction
 		speed = lerpf(3.0, 10.0, slide_remaining / 0.65)
-	velocity.x = dir.x * speed
-	velocity.z = dir.z * speed
+	if tactical and slide_remaining <= 0.0:
+		var rate := tactical.deceleration if dir.length_squared() < 0.01 else tactical.acceleration
+		var planar := Vector2(velocity.x, velocity.z).move_toward(Vector2(dir.x, dir.z) * speed, rate * delta)
+		velocity.x = planar.x
+		velocity.z = planar.y
+	else:
+		velocity.x = dir.x * speed
+		velocity.z = dir.z * speed
 	try_step(Vector3(velocity.x, 0, velocity.z) * delta)
 	move_and_slide()
 	_punch_cd = maxf(_punch_cd - delta, 0.0)
@@ -228,6 +235,10 @@ func _move_input() -> Vector2:
 	if touch:
 		v += touch.move
 	return v.limit_length(1.0)
+
+func control_yaw() -> float:
+	var cam := get_tree().get_first_node_in_group("camera_rig") as CameraRig
+	return cam.yaw if cam else rotation.y
 
 
 func take_damage(amount: float, bypass_armor := false) -> void:
@@ -428,8 +439,7 @@ func set_first_person_visual(on: bool) -> void:
 func try_mantle() -> bool:
 	if tactical == null or locked or in_vehicle or health <= 0.0 or not is_on_floor() or vault_remaining > 0.0 or _move_input().length_squared() < 0.05:
 		return false
-	var cam := get_tree().get_first_node_in_group("camera_rig") as CameraRig
-	var yaw := cam.yaw if cam else rotation.y
+	var yaw := control_yaw()
 	var direction := (Basis(Vector3.UP, yaw) * Vector3(_move_input().x, 0, _move_input().y)).normalized()
 	var space := get_world_3d().direct_space_state
 	var low := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.4, global_position + Vector3.UP * 0.4 + direction * 1.15, 1, [get_rid()])

@@ -149,6 +149,7 @@ func start(selected: int) -> void:
 			bot.team = team
 			bot.role = id % 4
 			bot.manager = self
+			if game.hud.get("selected_difficulty") != null: bot.set_difficulty(game.hud.selected_difficulty)
 			arena.add_child(bot)
 			actor = bot
 			actors[id] = actor
@@ -161,11 +162,12 @@ func start(selected: int) -> void:
 		actor.locked = true
 		actor.owned_weapons.clear()
 		actor.magazines.clear()
-		actor.ammo = {1: 0, 2: 0, 3: 0}
+		actor.ammo = {1: 0, 2: 0, 3: 0, 4: 0}
 		actor.weapon = Arsenal.Id.NONE
 		if selected == MatchRules.Mode.CORRE:
 			actor.give_weapon(Arsenal.Id.PISTOL, 60)
-			actor.give_weapon(Arsenal.Id.RIFLE, 180)
+			var primary := int(game.hud.selected_weapon) if id == 0 and game.hud.get("selected_weapon") != null else Arsenal.Id.RIFLE
+			actor.give_weapon(primary, 180)
 		roster.append({"id": id, "team": team, "name": "Você" if id == 0 else "Bot %02d" % id, "position": spawn})
 	rules.prepare(selected, roster, arena.bases)
 	game.phase = game.Phase.FREE
@@ -173,10 +175,8 @@ func start(selected: int) -> void:
 	game.camera.yaw = -PI * 0.5 if selected == MatchRules.Mode.CORRE and player_team == 0 else PI * 0.5
 	game.camera.pitch = -0.12
 	if selected == MatchRules.Mode.CORRE:
-		var labels := [["Caixa de munições", "Armamento apreendido", "Maleta de equipamentos"], ["Maleta de dinheiro", "Carga fictícia", "Caixa de armamentos"]]
 		for team in 2:
-			for i in 3:
-				rules.add_objective("%d:%d" % [team, i], team, labels[team][i], arena.bases[team] + Vector3(0, 0, float(i) * 7.0 - 7.0))
+			rules.add_objective("%d:flag" % team, team, "BANDEIRA · " + ("POLÍCIA" if team == 0 else "AURORA"), arena.bases[team])
 		arena.sync_objectives(rules.objectives)
 	else:
 		zone = SafeZoneController.new()
@@ -216,7 +216,10 @@ func restart() -> void:
 	start(rules.mode)
 
 func _on_event(name: String, payload: Dictionary) -> void:
-	if name == "MATCH_STARTED":
+	if name == "SHOT_FIRED":
+		for actor: Player in actors.values():
+			if actor is MatchBot: actor.hear_sound(payload.position, int(payload.participant))
+	elif name == "MATCH_STARTED":
 		for actor: Player in actors.values():
 			actor.locked = false
 	elif name == "RESPAWN":
@@ -388,24 +391,19 @@ func decide_bot(bot: MatchBot) -> void:
 	for supply in _loot:
 		if supply.available and supply.kind in [0, 1]: weapon_loot_available = true
 	var enemy := -1
-	var nearest := 38.0
+	var nearest := bot.difficulty.sight_range
 	for other in actors:
 		if other == id or not rules.can_damage(id, other):
 			continue
 		var distance: float = bot.global_position.distance_to(actors[other].global_position)
 		if distance >= nearest:
 			continue
-		var from := bot.global_position + Vector3.UP * 1.3
-		var to := _enemy_position(other)
-		var query := PhysicsRayQueryParameters3D.create(from, to, 1 | 2 | 4 | 8 | 16, [bot.get_rid()])
-		var hit := game.get_world_3d().direct_space_state.intersect_ray(query)
-		if hit and (hit.collider == actors[other] or (other == 0 and hit.collider == game.active_vehicle)):
+		if bot.can_perceive(actors[other], _enemy_position(other)):
 			nearest = distance
 			enemy = other
 	if enemy >= 0:
 		bot.cancel_plate()
-		bot.last_seen = actors[enemy].global_position
-		bot.memory_until = rules.elapsed + 5.0
+		bot.observe_enemy(enemy, actors[enemy].global_position)
 		bot.bot_state = "ATTACK"
 		if nearest < 1.7:
 			bot.route = PackedVector3Array()
@@ -420,7 +418,7 @@ func decide_bot(bot: MatchBot) -> void:
 			bot.move_to(actors[enemy].global_position)
 		else:
 			bot.route = PackedVector3Array()
-		_bot_fire(bot, enemy)
+		if bot.reacted(): _bot_fire(bot, enemy)
 		return
 	if needs_loot and weapon_loot_available:
 		bot.bot_state = "LOOT"
@@ -484,10 +482,11 @@ func _bot_fire(bot: MatchBot, victim: int) -> void:
 	if not bot.can_fire():
 		return
 	bot.spend_shot()
-	bot.attack_remaining = rules.config.bot_interval
+	bot.attack_remaining = bot.difficulty.fire_interval if is_equal_approx(rules.config.bot_interval, 0.65) else rules.config.bot_interval
 	var from := bot.global_position + Vector3.UP * 1.3
 	var to := _enemy_position(victim)
-	if randf() > rules.config.bot_accuracy:
+	var accuracy := bot.difficulty.accuracy if is_equal_approx(rules.config.bot_accuracy, 0.7) else rules.config.bot_accuracy
+	if randf() > accuracy:
 		to += Vector3(randf_range(-1.5, 1.5), randf_range(-0.7, 0.7), 0)
 	var query := PhysicsRayQueryParameters3D.create(from, to + (to - from).normalized() * 0.5, 1 | 2 | 4 | 8 | 16, [bot.get_rid()])
 	var hit := game.get_world_3d().direct_space_state.intersect_ray(query)
@@ -495,10 +494,11 @@ func _bot_fire(bot: MatchBot, victim: int) -> void:
 		to = hit.position
 		if hit.collider is Player:
 			var data := Arsenal.data(bot.weapon)
-			apply_hit(bot.participant_id, hit.collider, rules.config.bot_damage * data.damage_at(from.distance_to(to)) / maxf(data.damage, 0.01))
+			apply_hit(bot.participant_id, hit.collider, rules.config.bot_damage * bot.difficulty.damage_multiplier * data.damage_at(from.distance_to(to)) / maxf(data.damage, 0.01))
 		elif hit.collider is Vehicle:
 			hit.collider.apply_damage(rules.config.bot_damage)
 	game.shot_effects.emit_shot(from, to, not hit.is_empty())
+	bus.publish("SHOT_FIRED", {"participant": bot.participant_id, "position": from})
 	bot.rotation.y = atan2(-(to - from).x, -(to - from).z)
 	if rules.mode == MatchRules.Mode.CORRE and to.distance_to(arena.bases[player_team]) < 12.0:
 		bus.publish("BASE_UNDER_ATTACK")
@@ -562,7 +562,7 @@ func _collect_loot(id: int, automatic_only := false, radius := -1.0) -> bool:
 	return false
 
 func _update_hud() -> void:
-	var mode_name := "PROTEGE O CORRE!" if rules.mode == MatchRules.Mode.CORRE else "FAVELA ROYALE"
+	var mode_name := "FACÇÃO × POLÍCIA · BANDEIRAS" if rules.mode == MatchRules.Mode.CORRE else "FAVELA ROYALE"
 	var status := "%s  ·  %02d:%02d" % [mode_name, int(rules.remaining) / 60, int(rules.remaining) % 60]
 	if rules.mode == MatchRules.Mode.CORRE:
 		status += "  ·  POLÍCIA %d × %d AURORA" % [rules.score[0], rules.score[1]]
@@ -587,9 +587,21 @@ func _update_hud() -> void:
 	else:
 		var carried := rules.carried_by(0)
 		var deposit := "POLÍCIA" if player_team == 0 else "AURORA"
-		game.hud.set_objective("PACOTE: %s · leve ao depósito %s" % [carried.label, deposit] if carried else "Roube os pacotes adversários · 5 capturas vencem · E na base repõe reserva")
-		game.hud.set_prompt("E · objetivo / arsenal   G · pacote   4 · placas   C · cobertura   V · câmera   Tab · menu")
-		game.touch.set_can_interact(true, "PACOTE / CAR")
+		game.hud.set_objective("BANDEIRA: retorne à base %s · sua bandeira precisa estar em casa" % deposit if carried else flag_status())
+		game.hud.set_prompt("E · bandeira / arsenal   G · soltar   4 · placas   C · cobertura   V · câmera   Esc · pausa")
+		game.touch.set_can_interact(true, "BANDEIRA")
+
+func flag_status() -> String:
+	var result: Array[String] = []
+	for team in 2:
+		var own: ObjectiveState = rules.objectives.get("%d:flag" % team)
+		if own:
+			var state_name: String = ["NA BASE", "COM PORTADOR", "CAÍDA", "RETORNANDO", "CAPTURADA"][own.state]
+			var alive := 0
+			for member in rules.participants.values():
+				if member.team == team and member.alive: alive += 1
+			result.append("%s: %s (%d vivos)" % ["POLÍCIA" if team == 0 else "AURORA", state_name, alive])
+	return " · ".join(result)
 
 func nearby_loot() -> String:
 	var best := rules.config.interaction_distance

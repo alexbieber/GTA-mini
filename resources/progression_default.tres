@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Progression" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/progression.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+elimination_xp = 25
+capture_xp = 80
+victory_xp = 120
+level_thresholds = PackedInt32Array(0, 200, 500, 1000, 1800, 3000)
+level_titles = PackedStringArray("Recruta", "Firmeza", "Sentinela", "Guardião da rua", "Veterano do bairro", "Lenda do Caos")

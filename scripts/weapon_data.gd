@@ -21,6 +21,7 @@ extends Resource
 @export var price := 250
 @export_range(0.0, 1.0) var minimum_damage_ratio := 0.55
 @export var falloff_start := 0.0
+@export_range(1, 16) var pellet_count := 1
 
 func damage_at(distance: float) -> float:
 	if distance > effective_range: return 0.0

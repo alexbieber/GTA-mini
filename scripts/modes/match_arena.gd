@@ -244,10 +244,20 @@ func sync_objectives(items: Dictionary) -> void:
 		if not _objective_meshes.has(item.id):
 			var view := MeshInstance3D.new()
 			var mesh := BoxMesh.new()
-			mesh.size = Vector3(0.65, 0.45, 0.4)
+			mesh.size = Vector3(0.9, 0.55, 0.035)
 			view.mesh = mesh
 			view.material_override = material(team_color(item.owner))
 			add_child(view)
+			var pole := MeshInstance3D.new()
+			var cylinder := CylinderMesh.new()
+			cylinder.top_radius = 0.025
+			cylinder.bottom_radius = 0.025
+			cylinder.height = 1.5
+			cylinder.radial_segments = 8
+			pole.mesh = cylinder
+			pole.material_override = material(Color("d2c8ae"))
+			pole.position = Vector3(-0.44, -0.45, 0)
+			view.add_child(pole)
 			var tag := Label3D.new()
 			tag.text = item.label
 			tag.position.y = 0.8
@@ -258,7 +268,7 @@ func sync_objectives(items: Dictionary) -> void:
 			_objective_meshes[item.id] = view
 		var view: MeshInstance3D = _objective_meshes[item.id]
 		view.visible = item.state not in [ObjectiveState.Status.CAPTURED, ObjectiveState.Status.RETURNING]
-		view.global_position = item.position + Vector3.UP * (1.7 if item.state == ObjectiveState.Status.CARRIED else 0.4)
+		view.global_position = item.position + Vector3.UP * (1.7 if item.state == ObjectiveState.Status.CARRIED else 1.3)
 
 func sync_zone(center: Vector3, radius: float) -> void:
 	if zone_mesh == null:
