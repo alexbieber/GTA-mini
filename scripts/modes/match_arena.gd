@@ -90,6 +90,13 @@ func _build_favela() -> void:
 			var height := 3.4 + float(index % 3) * 0.45
 			_house(Vector2(x, z), dimensions, height, colors[index % colors.size()], index % 7 == 0)
 			index += 1
+	# Smaller infill modules create 4-6m alleys between the main houses.
+	for x in [-60.0, -28.0, 4.0, 36.0, 68.0, 100.0]:
+		for z in [-76.0, -44.0, -12.0, 20.0, 52.0, 84.0]:
+			if absf(x) < 25 and absf(z) < 25: continue
+			if x in [36.0, 100.0] and z >= 36: continue
+			_house(Vector2(x, z), Vector2(9, 10), 3.1, colors[index % colors.size()], false)
+			index += 1
 	for at in [Vector2(-8, -27), Vector2(28, 10), Vector2(-35, 30), Vector2(10, -55)]:
 		_obstacle(at, Vector2(4, 2), 1.2, Color("806944"))
 	_build_box(Vector3(0, 0.02, 0), Vector3(32, 0.04, 32), Color("aaa28a"), false)
@@ -112,6 +119,8 @@ func _house(center: Vector2, dimensions: Vector2, height: float, color: Color, s
 	for x in [-dimensions.x * 0.27, dimensions.x * 0.27]:
 		_build_box(Vector3(center.x + x, floor_y + 1.8, center.y + dimensions.y * 0.5 + 0.03), Vector3(1.4, 1.3, 0.08), Color("374755"), false)
 	_build_box(Vector3(center.x, floor_y + 1.1, center.y + dimensions.y * 0.5 + 0.05), Vector3(1.2, 2.2, 0.1), Color("705c48"), false)
+	for row in range(1, floori(height / 0.5)):
+		_build_box(Vector3(center.x, floor_y + row * 0.5, center.y + dimensions.y * 0.5 + 0.04), Vector3(dimensions.x, 0.014, 0.018), Color("8e7866"), false)
 	var tank := CylinderMesh.new()
 	tank.top_radius = 0.8
 	tank.bottom_radius = 0.8
@@ -242,7 +251,8 @@ func sync_objectives(items: Dictionary) -> void:
 			var tag := Label3D.new()
 			tag.text = item.label
 			tag.position.y = 0.8
-			tag.font_size = 24
+			tag.font_size = 20
+			tag.pixel_size = 0.003
 			tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 			view.add_child(tag)
 			_objective_meshes[item.id] = view

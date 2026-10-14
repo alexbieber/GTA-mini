@@ -15,6 +15,7 @@ var active_vehicle: Node3D
 var active_aircraft: Node3D
 var _firing := false
 var _settings := ConfigFile.new()
+var master_volume := 1.0
 
 func _ready() -> void:
 	CombatInput.install()
@@ -23,6 +24,8 @@ func _ready() -> void:
 	camera = CameraRig.new()
 	camera.add_to_group("camera_rig")
 	add_child(camera)
+	camera.arm_length = 5.0
+	camera.camera().far = 280.0
 	camera.set_process(false)
 	touch = TouchControls.new()
 	touch.visible = false
@@ -88,6 +91,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		player.request_reload()
 	if event.is_action_pressed("interact"):
 		matches.interact_player()
+	if event.is_action_pressed("melee"):
+		matches.melee(0)
 	if event.is_action_pressed("drop_objective"):
 		matches.rules.drop(0)
 	if event.is_action_pressed("swap_shoulder"):
@@ -97,17 +102,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		_try_fire()
 	if event.is_action_released("fire"):
 		_firing = false
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP: player.cycle_weapon(1)
-		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN: player.cycle_weapon(-1)
+	if event.is_action_pressed("cycle_weapon_up"): player.cycle_weapon(1)
+	if event.is_action_pressed("cycle_weapon_down"): player.cycle_weapon(-1)
+	for action in {"weapon_1": Arsenal.Id.PISTOL, "weapon_2": Arsenal.Id.SMG, "weapon_3": Arsenal.Id.RIFLE}:
+		if event.is_action_pressed(action):
+			player.select_weapon({"weapon_1": Arsenal.Id.PISTOL, "weapon_2": Arsenal.Id.SMG, "weapon_3": Arsenal.Id.RIFLE}[action])
+	if event.is_action_pressed("graphics_profile"):
+		clock.set_quality((clock.quality + 1) % 3)
+		save_settings()
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
-			KEY_1: player.select_weapon(Arsenal.Id.PISTOL)
-			KEY_2: player.select_weapon(Arsenal.Id.SMG)
-			KEY_3: player.select_weapon(Arsenal.Id.RIFLE)
-			KEY_F6:
-				clock.set_quality((clock.quality + 1) % 3)
-				save_settings()
 			KEY_ESCAPE:
 				matches.return_menu()
 
@@ -117,12 +121,16 @@ func _process(_delta: float) -> void:
 	if look != Vector2.ZERO: camera.add_look(look, true)
 	if touch.consume_jump(): player.request_jump()
 	if touch.consume_interact(): matches.interact_player()
+	if touch.consume_punch(): matches.melee(0)
 	if touch.reload_pressed:
 		touch.reload_pressed = false
 		player.request_reload()
 	if touch.crouch_pressed:
 		touch.crouch_pressed = false
 		player.request_crouch()
+	if touch.cover_pressed:
+		touch.cover_pressed = false
+		player.request_cover()
 	if touch.firing and not touch.was_firing: _try_fire()
 	touch.was_firing = touch.firing
 	if (_firing or touch.firing) and player.weapon != Arsenal.Id.NONE and Arsenal.data(player.weapon).automatic:
@@ -147,7 +155,7 @@ func _try_fire() -> void:
 		if matches.apply_hit(0, hit.collider, data.damage * multiplier):
 			hud.confirm_hit()
 			if height > 1.3: matches.bus.publish("HEADSHOT", {"participant": 0})
-	shot_effects.emit_shot(muzzle, result.end)
+	shot_effects.emit_shot(muzzle, result.end, not hit.is_empty())
 	camera.kick(data)
 
 func _load_settings() -> void:
@@ -157,6 +165,7 @@ func _load_settings() -> void:
 	matches.announcer.volume_db = float(_settings.get_value("settings", "voice_db", -6.0))
 	camera.mouse_sens = float(_settings.get_value("settings", "mouse_sens", 0.0032))
 	camera.ads_sensitivity = float(_settings.get_value("settings", "ads_sens", 0.55))
+	set_master_volume(float(_settings.get_value("settings", "master_volume", 1.0)))
 	if not _settings.has_section("bindings"): return
 	for action in _settings.get_section_keys("bindings"):
 		if InputMap.has_action(action):
@@ -169,6 +178,11 @@ func save_settings() -> void:
 	_settings.set_value("settings", "voice_db", matches.announcer.volume_db)
 	_settings.set_value("settings", "mouse_sens", camera.mouse_sens)
 	_settings.set_value("settings", "ads_sens", camera.ads_sensitivity)
-	for action in ["move_left", "move_right", "move_forward", "move_back", "jump", "sprint", "aim", "fire", "reload", "crouch", "swap_shoulder", "tactical_sprint", "interact", "drop_objective", "return_menu"]:
+	_settings.set_value("settings", "master_volume", master_volume)
+	for action in MatchHUD.ACTION_LABELS:
 		_settings.set_value("bindings", action, InputMap.action_get_events(action))
 	_settings.save("user://competitive_settings.cfg")
+
+func set_master_volume(value: float) -> void:
+	master_volume = clampf(value, 0.0, 1.0)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), linear_to_db(maxf(master_volume, 0.0001)))

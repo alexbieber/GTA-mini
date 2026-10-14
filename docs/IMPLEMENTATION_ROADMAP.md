@@ -1,5 +1,18 @@
 # Roadmap — OPERAÇÃO CAOS
 
+## Direção obrigatória atual: sprints competitivas
+
+| Sprint | Estado | Evidência |
+|---|---|---|
+| A Menu leve / arquivo do mundo aberto | Implementada | Menu sem mapa/modelo/HDRI, unload e comparação de carga |
+| B Protege o Corre! 5v5 | Implementada offline | Bots, LOS, objetivos, 5 capturas e resultado |
+| C Voz original da Facção | Implementada | 20 hashes preservados, bancos exclusivos, reprodução OGG e legenda policial |
+| D Favela Royale | Implementada offline | 10 spawns conectados, loot, rampa/laje, 150 zonas acessíveis, eliminação/vitória |
+| E Polimento/performance inicial | Incremento implementado | Cobertura estática, impacto em pool, UI/config, 193 checks e duas amostras renderizadas de 30 s |
+| F Multiplayer | Preparação de dados/documentada | Sem rede funcional; próximo gate em MULTIPLAYER_PLAN.md |
+
+Pendências prioritárias: teste manual prolongado/touch/áudio, animações e IK de arma, visual dos módulos, decisões táticas dos bots, LOD/occlusion medidos e servidor autoritativo. Planos de mundo aberto abaixo ficam arquivados.
+
 Cada etapa deve ter diff e commit próprios, testes e atualização da matriz. Esta entrega cobre a primeira etapa e a fundação de perfis gráficos. Não declara paridade com GTA V.
 
 | Etapa | Entrega | Gate de aceitação | Estado |

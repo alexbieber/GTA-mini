@@ -140,6 +140,7 @@ func run() -> void:
 	announcer.request("FIRST_BLOOD")
 	announcer._process(0.01)
 	check(announcer._speaker.playing and announcer._speaker.stream == voice, "announcer starts real recording through AudioStreamPlayer")
+	await create_timer(0.05).timeout
 	announcer.set_enabled(false)
 	check(not announcer._speaker.playing, "disable stops active audio playback")
 	announcer.set_enabled(true)
@@ -151,6 +152,6 @@ func run() -> void:
 	voice = null
 	announcer.queue_free()
 	# Give the audio mixing thread a block to release stopped OGG playback.
-	await create_timer(0.12).timeout
+	await create_timer(0.3).timeout
 	print("MATCH_RULES: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

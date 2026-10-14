@@ -1,24 +1,30 @@
-## OPERAÇÃO CAOS — desenvolvimento Godot
+# OPERAÇÃO CAOS — dois mapas competitivos
 
-Esta base GTA-mini/Night Drop está sendo evoluída com mecânicas e identidade originais.
-A primeira etapa adiciona **salto com Espaço**, **RUN/JUMP no touch**, proteção da
-câmera contra paredes próximas e perfis gráficos **LOW/MEDIUM/HIGH com F6**.
-LOW é o padrão; os controles existentes de veículos, armas e missões continuam em uso.
-O salto ainda reutiliza a animação idle, sem clip dedicado.
+Godot **4.7.2**, Compatibility, LOW inicial, teclado/mouse e touch. Versão offline com personagem urbano original, ADS, recoil, carregadores/recarga, cobertura estática e locução por equipe.
 
-Auditoria e limites da referência: [matriz de funcionalidades](docs/REFERENCE_FEATURE_MATRIX.md).
-Próximas etapas: [roadmap](docs/IMPLEMENTATION_ROADMAP.md),
-[arquitetura](docs/ARCHITECTURE.md) e [resultados de testes](docs/TEST_RESULTS.md).
+- **PROTEGE O CORRE!**: 5v5, Polícia × Coletivo Aurora, captura de objetivos, 10 minutos, respawn e bots.
+- **FAVELA ROYALE**: 10 participantes, loot, cinco fases de zona e último sobrevivente.
 
-Após importar o projeto no Godot 4.7, execute:
+Importe o único `project.godot` desta pasta e pressione **F5**. A cena inicial é `scenes/competitive_main.tscn`. Escolha Polícia ou Facção e um dos modos. Configurações ajustam gráficos, áudio e controles. Sua voz original está em `audio/announcer/faccao`; Polícia usa legendas, sem voz sintetizada. Multiplayer ainda não foi implementado.
+
+WASD, Shift, Espaço, Ctrl agachar/slide, T tactical sprint, RMB ADS, LMB tiro, R recarga, Q ombro, C cobertura, F corpo a corpo, E objetivo/loot/arsenal, G derrubar pacote, 1–3/roda armas, Tab/Esc menu, F6 qualidade. Cobertura baixa expõe o personagem ao mirar; paredes altas exigem deslocar-se até a borda.
+
+[Modos e arquitetura](docs/GAME_MODES.md) · [5v5](docs/PROTEGE_O_CORRE.md) · [Favela](docs/BATTLE_ROYALE.md) · [Locutor](docs/ANNOUNCER_SYSTEM.md) · [Testes](docs/GAME_MODES_TESTS.md) · [Desempenho](docs/PERFORMANCE.md).
+
+Após importar, testes automatizados:
 
 ```sh
 godot --headless --path . --script tests/test_stage_one.gd
 godot --headless --path . --script tests/test_game_integration.gd
+godot --headless --path . --script tests/test_combat.gd
+godot --headless --path . --script tests/test_cover.gd
+godot --headless --path . --script tests/test_lightweight_menu.gd
+godot --headless --path . --script tests/test_match_rules.gd
+godot --headless --path . --script tests/test_modes_integration.gd
+godot --headless --path . --script tests/test_map_navigation.gd
 ```
 
-O texto abaixo documenta a base upstream; anúncios de funcionalidades são
-conferidos na matriz e não equivalem a validação de todas as mecânicas.
+O mundo aberto foi [arquivado sem apagar recursos](docs/OPEN_WORLD_ARCHIVE.md). Para executá-lo explicitamente, abra `scenes/main.tscn` e use F6 no editor. Ele não aparece no menu novo nem é carregado automaticamente. O teste `test_game_integration.gd` verifica essa cena histórica. O texto upstream abaixo documenta o conteúdo arquivado e a trilha Unity, que não foram removidos nem portados para os modos atuais.
 
 <p align="center">
   <img src="docs/media/play_city.png" alt="Night Drop — driving the amber coupe through the harbor grid at night" width="100%">

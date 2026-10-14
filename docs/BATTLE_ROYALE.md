@@ -8,4 +8,6 @@ Zona: cinco fases editáveis em resources/safe_zone_default.tres, raio inicial 1
 
 Eliminação é permanente; sem respawn no Battle Royale. Último vivo vence; mortes simultâneas resolvidas em lote e zero sobreviventes resulta em empate. Resultados, feed e restart/menu compartilhados com Protege o Corre. A arena é separada e liberada ao retornar; cidade aberta não é carregada.
 
+F / botão PUNCH ativa corpo a corpo com alcance de 1,7 m, LOS físico e cooldown. Bots buscam nova munição quando esgotados e podem aproximar-se para corpo a corpo se o loot acabar, evitando fim de partida travado por falta de armas. Agachamento em área aberta continua detectável; percepção usa altura da cápsula atual. Casas menores de preenchimento formam vielas de aproximadamente 4–6 m, com toda conectividade novamente verificada.
+
 Limites: offline, um jogador humano; sem lobby de rede, drop aéreo, veículos, escopeta/sniper, inventário de loot visual completo ou IA de interiores. Cenário modular estilizado, animações de armas ainda placeholders. É uma versão testável, não qualidade AAA certificada.

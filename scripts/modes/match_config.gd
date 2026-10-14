@@ -13,3 +13,5 @@ extends Resource
 @export var bot_damage := 12.0
 @export var bot_interval := 0.65
 @export var bot_accuracy := 0.7
+@export var melee_damage := 35.0
+@export var melee_interval := 0.7

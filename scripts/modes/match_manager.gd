@@ -17,6 +17,7 @@ var _last_player_announced := false
 var _resume_phase := -1
 var loot_config := LootConfig.new()
 var player_team := 1
+var _melee_cooldowns: Dictionary = {}
 
 func _ready() -> void:
 	rules.config = load("res://resources/match_default.tres") as MatchConfig
@@ -83,6 +84,7 @@ func _cleanup() -> void:
 		arena = null
 	actors.clear()
 	_last_damage.clear()
+	_melee_cooldowns.clear()
 	_loot.clear()
 	zone = null
 	announcer.reset()
@@ -161,7 +163,7 @@ func start(selected: int) -> void:
 	rules.prepare(selected, roster, arena.bases)
 	game.phase = game.Phase.FREE
 	game.camera.global_position = game.player.global_position + Vector3.UP * 1.55
-	game.camera.yaw = PI * 0.5
+	game.camera.yaw = -PI * 0.5 if selected == MatchRules.Mode.CORRE and player_team == 0 else PI * 0.5
 	game.camera.pitch = -0.12
 	if selected == MatchRules.Mode.CORRE:
 		var labels := [["Caixa de munições", "Armamento apreendido", "Maleta de equipamentos"], ["Maleta de dinheiro", "Carga fictícia", "Caixa de armamentos"]]
@@ -301,6 +303,25 @@ func apply_hit(attacker: int, actor: Node, amount: float) -> bool:
 	(actor as Player).take_damage(amount)
 	return true
 
+func melee(id: int) -> bool:
+	if not actors.has(id) or rules.state != MatchRules.State.ACTIVE or float(_melee_cooldowns.get(id, 0.0)) > rules.elapsed:
+		return false
+	var source: Player = actors[id]
+	for target_id in actors:
+		if target_id == id or not rules.can_damage(id, target_id): continue
+		var target: Player = actors[target_id]
+		if source.global_position.distance_to(target.global_position) > 1.7: continue
+		var from := source.global_position + Vector3.UP * (0.7 if source.crouched else 1.0)
+		var to := target.global_position + Vector3.UP * (0.7 if target.crouched else 1.0)
+		var query := PhysicsRayQueryParameters3D.create(from, to, 1 | 2 | 16, [source.get_rid()])
+		var hit := game.get_world_3d().direct_space_state.intersect_ray(query)
+		if hit and hit.collider == target:
+			_melee_cooldowns[id] = rules.elapsed + rules.config.melee_interval
+			if apply_hit(id, target, rules.config.melee_damage):
+				if id == 0: game.hud.confirm_hit()
+				return true
+	return false
+
 func _zone_damage(amount: float) -> void:
 	for id in actors:
 		if rules.participants[id].alive and not zone.contains(actors[id].global_position):
@@ -323,7 +344,7 @@ func interact_player() -> bool:
 func _enemy_position(id: int) -> Vector3:
 	if id == 0 and game.active_vehicle:
 		return game.active_vehicle.global_position + Vector3.UP
-	return actors[id].global_position + Vector3.UP * 1.2
+	return actors[id].global_position + Vector3.UP * (0.75 if actors[id].crouched else 1.2)
 
 func decide_bot(bot: MatchBot) -> void:
 	if rules.state != MatchRules.State.ACTIVE or not rules.participants[bot.participant_id].alive:
@@ -333,11 +354,10 @@ func decide_bot(bot: MatchBot) -> void:
 		bot.bot_state = "ZONE"
 		bot.move_to(zone.center)
 		return
-	if zone and (bot.weapon == Arsenal.Id.NONE or (int(bot.magazines.get(bot.weapon, 0)) <= 0 and int(bot.ammo.get(bot.weapon, 0)) <= 0)):
-		bot.bot_state = "LOOT"
-		bot.move_to(_nearest_loot(bot.global_position, true))
-		_collect_loot(id)
-		return
+	var needs_loot := zone != null and (bot.weapon == Arsenal.Id.NONE or (int(bot.magazines.get(bot.weapon, 0)) <= 0 and int(bot.ammo.get(bot.weapon, 0)) <= 0))
+	var weapon_loot_available := false
+	for supply in _loot:
+		if supply.available and supply.kind in [0, 1]: weapon_loot_available = true
 	var enemy := -1
 	var nearest := 38.0
 	for other in actors:
@@ -357,11 +377,25 @@ func decide_bot(bot: MatchBot) -> void:
 		bot.last_seen = actors[enemy].global_position
 		bot.memory_until = rules.elapsed + 5.0
 		bot.bot_state = "ATTACK"
-		if nearest > 16.0:
+		if nearest < 1.7:
+			bot.route = PackedVector3Array()
+			melee(id)
+			return
+		if needs_loot and weapon_loot_available:
+			bot.bot_state = "LOOT"
+			bot.move_to(_nearest_loot(bot.global_position, true))
+			_collect_loot(id)
+			return
+		if nearest > 16.0 or needs_loot:
 			bot.move_to(actors[enemy].global_position)
 		else:
 			bot.route = PackedVector3Array()
 		_bot_fire(bot, enemy)
+		return
+	if needs_loot and weapon_loot_available:
+		bot.bot_state = "LOOT"
+		bot.move_to(_nearest_loot(bot.global_position, true))
+		_collect_loot(id)
 		return
 	if zone:
 		bot.bot_state = "HUNT"
@@ -431,9 +465,9 @@ func _bot_fire(bot: MatchBot, victim: int) -> void:
 			apply_hit(bot.participant_id, hit.collider, rules.config.bot_damage)
 		elif hit.collider is Vehicle:
 			hit.collider.apply_damage(rules.config.bot_damage)
-	game.shot_effects.emit_shot(from, to)
+	game.shot_effects.emit_shot(from, to, not hit.is_empty())
 	bot.rotation.y = atan2(-(to - from).x, -(to - from).z)
-	if rules.mode == MatchRules.Mode.CORRE and to.distance_to(arena.bases[1]) < 12.0:
+	if rules.mode == MatchRules.Mode.CORRE and to.distance_to(arena.bases[player_team]) < 12.0:
 		bus.publish("BASE_UNDER_ATTACK")
 
 func _spawn_loot() -> void:
@@ -515,5 +549,5 @@ func _update_hud() -> void:
 		var carried := rules.carried_by(0)
 		var deposit := "POLÍCIA" if player_team == 0 else "AURORA"
 		game.hud.set_objective("PACOTE: %s · leve ao depósito %s" % [carried.label, deposit] if carried else "Roube os pacotes adversários · 5 capturas vencem · E na base repõe reserva")
-		game.hud.set_prompt("E · objetivo / veículo   G · derrubar pacote   R · recarregar   Tab · menu")
+		game.hud.set_prompt("E · objetivo / arsenal   G · derrubar pacote   C · cobertura   R · recarregar   Tab · menu")
 		game.touch.set_can_interact(true, "PACOTE / CAR")

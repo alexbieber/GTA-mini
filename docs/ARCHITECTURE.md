@@ -1,5 +1,9 @@
 # Arquitetura — OPERAÇÃO CAOS
 
+## Entrada competitiva atual
+
+project.godot inicia competitive_main.tscn. Mundo aberto permanece em main.tscn sem carregamento automático. CompetitiveGame compõe MatchHUD, ArenaLighting, MatchManager, eventos/locutor e sistemas compartilhados de personagem/câmera/armas/touch. MatchRules e ObjectiveState são dados e validações; mapas próprios em scenes/maps/*.tscn utilizam MatchArena/MultiMesh e A*. Detalhes atuais em GAME_MODES.md. As seções abaixo preservam a auditoria histórica.
+
 ## Estado entregue
 
 Godot 4.7, GDScript, cena principal minimalista e criação procedural em `game.gd`. `Player`, `Vehicle`, `Pedestrian`, `WantedSystem`, `City`, `CameraRig`, `DayNight`, `GameHUD` e `Radar` permanecem em uso. APIs públicas de carro, avião, câmera e entrada existentes foram preservadas.

@@ -1,5 +1,9 @@
 # Resultados de testes — 14/10/2026
 
+## Direção atual: dois mapas competitivos
+
+Sprint A–E substituiu apenas a entrada automática: mundo aberto arquivado, menu leve, Protege o Corre! 5v5 e Favela Royale para 10 participantes, banco Facção com 20 gravações preservadas. Resultados atuais completos em GAME_MODES_TESTS.md e PERFORMANCE.md: 193 verificações automatizadas sem falhas; amostras renderizadas de 30 s por mapa. As seções seguintes são histórico do desenvolvimento, não descrição do menu atual.
+
 ## Incremento de combate (segunda execução)
 
 Novas verificações em tests/test_combat.gd cobrem munição/recarga/cancelamento, cadência, armadura/morte, crouch/teto, escala visual, slide/tactical sprint, tiros bloqueados por parede próxima ao personagem, ADS/sensibilidade/recoil e pool limitado. Integração agora verifica respawn após roubo sem liberar FREE antes da entrega. Resultado final: combat 40/40, stage_one 24/24 e game_integration 14/14; todos exit 0, sem erros de script. git diff --check passou. Testes de teclado/mouse usam eventos físicos correspondentes aos dispositivos do Godot 4.7.

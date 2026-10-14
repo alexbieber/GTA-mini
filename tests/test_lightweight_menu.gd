@@ -21,6 +21,8 @@ func run() -> void:
 	check(get_nodes_in_group("peds").is_empty() and get_nodes_in_group("vehicles").is_empty(), "menu loads no civilians traffic or vehicles")
 	check(not ResourceLoader.has_cached("res://assets/pbr/hdri/wide_street_01_2k.hdr"), "menu loads no archived HDRI")
 	check(not ResourceLoader.has_cached("res://assets/people/real/man.fbx"), "menu defers character model until selection")
+	check(not ResourceLoader.has_cached("res://scripts/city.gd"), "competitive entry does not load archived City script")
+	check(not ResourceLoader.has_cached("res://scripts/game.gd"), "competitive entry does not load archived Game script")
 	check(game.clock.quality == GraphicsProfile.Quality.LOW, "new menu starts LOW")
 	game.start_mode(MatchRules.Mode.FREE)
 	check(game.player == null and game.matches.arena == null, "archived open world is not an available mode")

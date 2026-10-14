@@ -55,6 +55,14 @@ func run() -> void:
 	var before_health: float = game.player.health
 	manager.decide_bot(enemy)
 	check(game.player.health < before_health and enemy.bot_state == "ATTACK", "bot perceives and physically shoots player through clear LOS")
+	game.player.set_crouched(true)
+	enemy.attack_remaining = 0.0
+	enemy.tick_combat(1.0)
+	await frames(3)
+	before_health = game.player.health
+	manager.decide_bot(enemy)
+	check(game.player.health < before_health, "crouching in open space does not make player invisible to bot LOS")
+	game.player.set_crouched(false)
 	var camera: Camera3D = game.camera.camera()
 	game.camera.set_process(false)
 	camera.global_position = game.player.global_position + Vector3(0, 1.4, 4)
@@ -63,6 +71,13 @@ func run() -> void:
 	game._try_fire()
 	check(enemy.health < enemy_health and game.hud.reticle.hit_remaining > 0.0, "player fire ray damages real enemy and confirms hit")
 	game.camera.set_process(true)
+	enemy.vitality.reset()
+	game.player.select_weapon(Arsenal.Id.NONE)
+	game.player.global_position = enemy.global_position + Vector3(0, 0, 1.3)
+	await frames(3)
+	check(manager.melee(0) and enemy.health < 100.0, "physical melee works when ammunition is unavailable")
+	check(not manager.melee(0), "melee cadence rejects repeated damage in same instant")
+	game.player.select_weapon(Arsenal.Id.RIFLE)
 	enemy.global_position = MatchArena.ORIGIN + Vector3(-42, 0.2, -20)
 	game.player.global_position = MatchArena.ORIGIN + Vector3(-14, 0.2, -20)
 	enemy.attack_remaining = 0.0

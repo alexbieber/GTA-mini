@@ -19,6 +19,7 @@ var _result_heading: Label
 var _result_standings: Label
 var _waiting_action := ""
 var _binding_button: Button
+const ACTION_LABELS := {"move_left": "Esquerda", "move_right": "Direita", "move_forward": "Avançar", "move_back": "Recuar", "jump": "Pular", "sprint": "Correr", "crouch": "Agachar / slide", "cover": "Cobertura", "aim": "Mira ADS", "fire": "Disparar", "reload": "Recarregar", "interact": "Interagir", "swap_shoulder": "Trocar ombro", "tactical_sprint": "Corrida tática", "drop_objective": "Soltar pacote", "return_menu": "Menu", "weapon_1": "Pistola", "weapon_2": "SMG", "weapon_3": "Fuzil", "cycle_weapon_up": "Próxima arma", "cycle_weapon_down": "Arma anterior", "graphics_profile": "Qualidade", "melee": "Corpo a corpo"}
 var reticle: CombatReticle
 var _banner_remaining := 0.0
 var radar: Radar
@@ -105,7 +106,7 @@ func _show_settings() -> void:
 		child.queue_free()
 	_menu_content.visible = false
 	_settings_content.visible = true
-	_settings_content.add_child(label("CONFIGURAÇÕES · Compatibility", 24))
+	_settings_content.add_child(label("CONFIGURAÇÕES", 24))
 	var quality := OptionButton.new()
 	for text in ["LOW", "MEDIUM", "HIGH"]: quality.add_item(text)
 	quality.select(game().clock.quality)
@@ -129,6 +130,16 @@ func _show_settings() -> void:
 		game().matches.announcer.volume_db = value
 		game().save_settings())
 	_settings_content.add_child(volume)
+	_settings_content.add_child(label("Volume geral", 16))
+	var master := HSlider.new()
+	master.min_value = 0.0
+	master.max_value = 1.0
+	master.step = 0.05
+	master.value = game().master_volume
+	master.value_changed.connect(func(value: float) -> void:
+		game().set_master_volume(value)
+		game().save_settings())
+	_settings_content.add_child(master)
 	_settings_content.add_child(label("Sensibilidade do mouse / ADS", 16))
 	var mouse := HSlider.new()
 	mouse.min_value = 0.001
@@ -149,16 +160,16 @@ func _show_settings() -> void:
 		game().save_settings())
 	_settings_content.add_child(ads)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 150
+	scroll.custom_minimum_size.y = 110
 	_settings_content.add_child(scroll)
 	var bindings := GridContainer.new()
-	bindings.columns = 3
+	bindings.columns = 2
 	bindings.add_theme_constant_override("h_separation", 8)
 	bindings.add_theme_constant_override("v_separation", 8)
 	scroll.add_child(bindings)
-	for action in ["move_left", "move_right", "move_forward", "move_back", "jump", "sprint", "crouch", "aim", "fire", "reload", "interact", "swap_shoulder", "tactical_sprint", "drop_objective", "return_menu"]:
+	for action in ACTION_LABELS:
 		var events := InputMap.action_get_events(action)
-		var caption := str(action) + " · " + (events[0].as_text() if not events.is_empty() else "—")
+		var caption := str(ACTION_LABELS.get(action, action)) + " · " + (events[0].as_text().replace(" - Physical", "") if not events.is_empty() else "—")
 		var binding := button(caption, Callable(), bindings)
 		binding.pressed.connect(func() -> void:
 			_waiting_action = action
@@ -178,11 +189,15 @@ func capture_binding(event: InputEvent) -> bool:
 			return true
 		InputMap.action_erase_events(_waiting_action)
 		InputMap.action_add_event(_waiting_action, event.duplicate())
-		_binding_button.text = _waiting_action + " · " + event.as_text()
+		_binding_button.text = str(ACTION_LABELS.get(_waiting_action, _waiting_action)) + " · " + event.as_text().replace(" - Physical", "")
 		_waiting_action = ""
 		game().save_settings()
 		return true
 	return false
+
+func _input(event: InputEvent) -> void:
+	if _waiting_action != "" and capture_binding(event):
+		get_tree().set_input_as_handled()
 
 func _build_match() -> void:
 	_match = Control.new()

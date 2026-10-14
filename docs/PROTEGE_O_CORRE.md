@@ -9,3 +9,5 @@ E coleta um dos três objetivos adversários; entrega automática dentro de 5 m 
 Bots têm papéis de defesa, ataque, escolta e recuperação, por estado real. Navegação segue A*, tiros exigem raycast LOS e validação local de equipes/vida/proteção. Armas, carregadores, recarga e dano são compartilhados com Player; agressividade configurável. Ainda não há decisões sofisticadas de supressão, granadas, animação dedicada de cobertura ou navegação de lajes. HUD mostra equipe/placar, tempo, pacote, feed e resultado com kills/mortes.
 
 Controles: WASD, Shift, Ctrl (crouch/slide), Espaço, T tactical sprint, RMB ADS, LMB tiro, R recarga, Q ombro, 1–3/roda armas, E objetivo/arsenal, G derrubar, Tab/Esc menu, F6 qualidade. Configurações permitem remapear ações principais e persistem em user://competitive_settings.cfg. Touch de movimento/combate preservado; disposição ainda exige aparelho real.
+
+C / COVER ativa cobertura estática; F / PUNCH permite corpo a corpo validado por distância/LOS/cadência. Troca de armas, roda e qualidade também possuem ações remapeáveis, além das ações de movimento/combate. Animações de mãos/arma ainda são provisórias.

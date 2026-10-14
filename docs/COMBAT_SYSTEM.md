@@ -1,5 +1,7 @@
 # Combate — incremento jogável de 14/10/2026
 
+Atualização da sprint competitiva: cobertura estática por C/touch, degraus de até 0,26 m e impacto visual limitado foram adicionados. Os modos utilizam combatentes próprios, equipes, eliminação/respawn e LOS; cobertura/IA e novas cenas estão documentadas em GAME_MODES.md. A lista histórica de pendências abaixo corresponde ao incremento anterior.
+
 Player mantém APIs de veículos, inventário e saúde. WeaponData (.tres) define pistola, SMG e fuzil; carregadores/reservas pertencem ao jogador. Hitscan escolhe alvo pela câmera e valida o percurso a partir de um cano simulado à altura do peito. Parede próxima tem prioridade sobre alvo visto pela câmera. Head/torso/pernas usam altura relativa da cápsula; não são hitboxes ósseas.
 
 HealthComponent oferece armadura opcional, dano, morte, cura e reset explícito. Player e Pedestrian o reutilizam. Veículos continuam com sua API apply_damage. NPCs feridos fogem; ao zerar vida, usam a queda temporária existente e recuperam saúde ao levantar. Eliminação permanente será responsabilidade dos modos competitivos.

@@ -3,6 +3,7 @@ extends CharacterBody3D
 
 const Models = preload("res://scripts/models.gd")
 const Movement = preload("res://scripts/locomotion.gd")
+const Cover = preload("res://scripts/cover_controller.gd")
 
 const WALK_SPEED := 5.2
 const SPRINT_SPEED := 7.6
@@ -36,6 +37,11 @@ var _visual_scale := Vector3.ONE
 var _gun: Node3D
 var _gun_kick := 0.0
 var uniform_color := Color.WHITE
+var _skin_materials: Array[ShaderMaterial] = []
+var in_cover := false
+var _cover_normal := Vector3.ZERO
+var _cover_low := false
+var _cover_was_crouched := false
 var _punch_cd := 0.0
 var _fire_cd := 0.0
 var _anim: AnimationPlayer
@@ -44,6 +50,7 @@ var locomotion := Movement.new()
 
 func request_jump() -> void:
 	if not locked and not in_vehicle:
+		exit_cover()
 		locomotion.request_jump()
 
 
@@ -73,6 +80,7 @@ func _build_mesh() -> void:
 	for node in _visual.find_children("*", "MeshInstance3D", true, false):
 		if node.material_override is ShaderMaterial:
 			node.material_override.set_shader_parameter("shirt_color", uniform_color)
+			_skin_materials.append(node.material_override)
 	_visual_scale = _visual.scale
 	_anim = made["anim"]
 
@@ -86,6 +94,7 @@ func set_hidden(on: bool) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_update_skin()
 	if in_vehicle or locked:
 		reset_combat()
 		movement_state = "Death" if health <= 0.0 else "Idle"
@@ -100,7 +109,13 @@ func _physics_process(delta: float) -> void:
 	aiming = weapon != Arsenal.Id.NONE and (Input.is_action_pressed("aim") or (touch_input != null and touch_input.aiming)) and slide_remaining <= 0.0
 	if Input.is_action_just_pressed("crouch"):
 		request_crouch()
-	if Input.is_action_just_pressed("tactical_sprint") and tactical_cooldown <= 0.0 and stamina > 30.0 and is_on_floor() and not crouched and not aiming and reload_remaining <= 0.0 and _move_input().length_squared() > 0.05:
+	if Input.is_action_just_pressed("cover"):
+		request_cover()
+	if in_cover and not Cover.retains_contact(self, _cover_normal):
+		exit_cover()
+	if in_cover and _cover_low:
+		set_crouched(not aiming)
+	if Input.is_action_just_pressed("tactical_sprint") and tactical_cooldown <= 0.0 and stamina > 30.0 and is_on_floor() and not crouched and not in_cover and not aiming and reload_remaining <= 0.0 and _move_input().length_squared() > 0.05:
 		tactical_remaining = 1.4
 		tactical_cooldown = 4.0
 	var grounded := is_on_floor()
@@ -117,9 +132,15 @@ func _physics_process(delta: float) -> void:
 	var dir := (basis * Vector3(input.x, 0, input.y))
 	if dir.length_squared() > 1.0:
 		dir = dir.normalized()
+	if in_cover:
+		if dir.dot(_cover_normal) > 0.55:
+			exit_cover()
+		else:
+			var tangent := _cover_normal.cross(Vector3.UP).normalized()
+			dir = tangent * dir.dot(tangent)
 	var touch := get_tree().get_first_node_in_group("touch") as TouchControls
 	var sprint_input := Input.is_action_pressed("sprint") or (touch != null and touch.sprint)
-	var want_sprint := (sprint_input or tactical_remaining > 0.0) and stamina > 4.0 and not aiming and not crouched and reload_remaining <= 0.0
+	var want_sprint := (sprint_input or tactical_remaining > 0.0) and stamina > 4.0 and not aiming and not crouched and not in_cover and reload_remaining <= 0.0
 	if want_sprint and dir.length_squared() > 0.05:
 		stamina = maxf(stamina - 18.0 * delta, 0.0)
 	else:
@@ -142,7 +163,9 @@ func _physics_process(delta: float) -> void:
 	try_step(Vector3(velocity.x, 0, velocity.z) * delta)
 	move_and_slide()
 	_punch_cd = maxf(_punch_cd - delta, 0.0)
-	if aiming or combat_remaining > 0.0:
+	if in_cover and not aiming:
+		rotation.y = lerp_angle(rotation.y, atan2(_cover_normal.x, _cover_normal.z), 1.0 - exp(-24.0 * delta))
+	elif aiming or combat_remaining > 0.0:
 		rotation.y = lerp_angle(rotation.y, yaw, 1.0 - exp(-24.0 * delta))
 	elif dir.length_squared() > 0.05:
 		var target_yaw := atan2(-dir.x, -dir.z)
@@ -151,6 +174,7 @@ func _physics_process(delta: float) -> void:
 	Models.play_move(_anim, is_on_floor() and dir.length_squared() > 0.05, want_sprint)
 	movement_state = "Idle" if dir.length_squared() < 0.05 else ("Sprint" if want_sprint else "Jog")
 	if crouched: movement_state = "Crouch" if dir.length_squared() < 0.05 else "Crouch Walk"
+	if in_cover: movement_state = "Cover"
 	if tactical_remaining > 0.0 and want_sprint: movement_state = "Tactical Sprint"
 	if aiming: movement_state = "Aim"
 	if reload_remaining > 0.0: movement_state = "Reload"
@@ -303,11 +327,13 @@ func tick_combat(delta: float) -> void:
 		ammo[weapon] -= amount
 
 func reset_combat() -> void:
+	exit_cover()
 	aiming = false
 	reload_remaining = 0.0
 	combat_remaining = 0.0
 	slide_remaining = 0.0
 	tactical_remaining = 0.0
+	_fire_cd = 0.0
 
 func request_crouch() -> void:
 	if locked or in_vehicle:
@@ -324,6 +350,8 @@ func request_crouch() -> void:
 func set_crouched(on: bool) -> bool:
 	if _capsule == null:
 		return false
+	if on == crouched:
+		return true
 	if not on:
 		var shape := CapsuleShape3D.new()
 		shape.radius = 0.34
@@ -371,6 +399,44 @@ func try_step(motion: Vector3) -> void:
 		return
 	if test_move(raised.translated(motion), Vector3.DOWN * 0.36):
 		global_position.y += 0.26
+
+func request_cover() -> bool:
+	if locked or in_vehicle or not is_on_floor(): return false
+	if in_cover:
+		exit_cover()
+		return true
+	var found := Cover.detect(self)
+	if found.is_empty(): return false
+	_cover_was_crouched = crouched
+	if found.low: set_crouched(true)
+	var target: Vector3 = found.point + found.normal * 0.48
+	target.y = global_position.y
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = _capsule.shape
+	query.transform = Transform3D(Basis.IDENTITY, target + Vector3.UP * (_capsule.position.y + 0.04))
+	query.exclude = [get_rid()]
+	query.collision_mask = collision_mask
+	query.margin = 0.0
+	if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty():
+		set_crouched(_cover_was_crouched)
+		return false
+	global_position = target
+	_cover_normal = found.normal
+	_cover_low = found.low
+	in_cover = true
+	return true
+
+func exit_cover() -> void:
+	if not in_cover: return
+	in_cover = false
+	if _cover_low and not _cover_was_crouched and is_inside_tree():
+		set_crouched(false)
+
+func _update_skin() -> void:
+	for material in _skin_materials:
+		material.set_shader_parameter("character_origin", global_position)
+		material.set_shader_parameter("character_right", global_basis.x)
+		material.set_shader_parameter("character_height", 1.55 * (_visual.scale.y / _visual_scale.y if _visual else 1.0))
 
 
 func try_punch_officer() -> Pedestrian:
