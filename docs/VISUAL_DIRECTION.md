@@ -4,4 +4,6 @@ Identidade urbana original com assets locais licenciados. Cidade procedural, mat
 
 Referência: https://www.youtube.com/watch?v=l6RRdTFuepk — a ferramenta web abriu somente metadados/página, sem frames reproduzíveis. MCP REA list_browser_targets no endpoint http://127.0.0.1:9222 retornou provider_unavailable/endpoint_unreachable. Nenhuma cena específica do vídeo foi inferida. Captura do próprio projeto usa Godot RenderingServer e está separada da referência.
 
-Pendentes: transição contínua dia/entardecer/noite, clima/poças, animações de combate dedicadas, IK e apresentação humana mais detalhada. Personagem solicitado em seguida será original, com estilo urbano de regata/jeans; não será modelo copiado de personagem comercial.
+Personagem atualizado: modelo genérico Animated Man da Quaternius já presente, CC0, ajustado à altura local de 1,55 m. Shader original remapeia a paleta licenciada para pele negra, cabelo curto escuro, regata clara e jeans azul; braços ficam sem mangas por máscara local de vértices. Não usa modelo/textura de CJ (personagem de San Andreas). Visual continua estilizado e de baixa contagem de polígonos. Captura Compatibility inspecionada após alteração; animações locais reutilizadas. Não houve edição de raster ou download de assets.
+
+Pendentes: transição contínua dia/entardecer/noite, clima/poças, animações de combate dedicadas, IK e apresentação humana mais detalhada.

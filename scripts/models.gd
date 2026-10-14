@@ -157,6 +157,18 @@ static func play_move(ap: AnimationPlayer, moving: bool, fast := false) -> void:
 static func player_skin() -> String:
 	return "res://assets/people/humanMaleA.png"
 
+static func instance_urban_player() -> Dictionary:
+	var made := _instance_real_person(REAL_MAN)
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://shaders/urban_character.gdshader")
+	material.set_shader_parameter("palette_texture", Palette.tex("res://assets/people/real/body.png"))
+	for node in made["root"].find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		var own := material.duplicate() as ShaderMaterial
+		own.set_shader_parameter("mesh_height", mesh.get_aabb().size.y)
+		mesh.material_override = own
+	return made
+
 
 static func officer_skin() -> String:
 	return "res://assets/people/officer.png"
@@ -427,7 +439,7 @@ static func _polish_skin(root: Node) -> void:
 			mat.albedo_texture = tex
 		mat.roughness = 0.55
 		mat.metallic = 0.0
-		mat.subsurf_scatter_enabled = true
+		mat.subsurf_scatter_enabled = RenderingServer.get_current_rendering_method() == "forward_plus"
 		mat.subsurf_scatter_strength = 0.16
 		mat.subsurf_scatter_skin_mode = true
 		mi.material_override = mat

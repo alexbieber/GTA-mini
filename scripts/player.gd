@@ -65,9 +65,10 @@ func _ready() -> void:
 
 
 func _build_mesh() -> void:
-	var made := Models.instance_person(Models.player_skin())
+	var made := Models.instance_urban_player()
 	add_child(made["root"])
 	_visual = made["root"]
+	Models.normalize_person(_visual)
 	_visual_scale = _visual.scale
 	_anim = made["anim"]
 
