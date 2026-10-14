@@ -6,12 +6,12 @@ Máquina identificada: Intel Core i7-3770 @ 3,40 GHz (4 núcleos/8 threads), cer
 
 | Amostra renderizada de 30 s | FPS médio | p95 frame | Draw calls no último frame | Memória estática do motor |
 |---|---:|---:|---:|---:|
-| Protege o Corre! 5v5 | 59,97 | 17,09 ms | 141 | 48,5 MiB |
+| Protege o Corre! 5v5 | 60,01 | 17,30 ms | 145 | 48,8 MiB |
 | Favela Royale, 10 participantes | 60,01 | 17,18 ms | 135 | 51,9 MiB |
 
-Scripts: tests/benchmark_competitive.gd, logs JSON em docs/measurements/. Cada amostra teve seis eliminações automáticas por bots, além de navegação e combate; jogador humano ficou parado. Capturas curtas estão próximas do limite de sincronização de 60 Hz; não medem FPS máximo sem VSync. Sem garantia de 60 FPS em toda situação ou 30 FPS estáveis por 10 minutos. Faltam teste prolongado, movimento humano, som real, heat/throttling e todos os perfis.
+Scripts: tests/benchmark_competitive.gd, logs JSON em docs/measurements/. Cada amostra teve seis eliminações automáticas por bots, além de navegação e combate; não houve inputs humanos programados. Capturas curtas estão próximas do limite de sincronização de 60 Hz; não medem FPS máximo sem VSync. Sem garantia de 60 FPS em toda situação ou 30 FPS estáveis por 10 minutos. Faltam teste prolongado, movimento humano, som real, heat/throttling e todos os perfis.
 
-Carregamento no teste renderizado: menu 522/671 ms; mapa 162 ms (Corre) / 381 ms (Royale), sem incluir boot do processo/importação inicial. Uma leitura Windows durante Corre reportou working set 198,6 MiB e pico até aquele instante 241,2 MiB. Uma leitura no Royale reportou working set 192,2 MiB e pico até aquele instante 192,2 MiB. Essas leituras são snapshots de Windows, não picos garantidos da partida inteira; não confundir memória estática do Godot com RAM total/VRAM.
+Carregamento no teste renderizado: menu 521/671 ms; mapa 181 ms (Corre) / 381 ms (Royale), sem incluir boot do processo/importação inicial. Uma leitura Windows durante uma amostra anterior de Corre reportou working set 198,6 MiB e pico até aquele instante 241,2 MiB. Uma leitura no Royale reportou working set 192,2 MiB e pico até aquele instante 192,2 MiB. Essas leituras são snapshots de Windows, não picos garantidos da partida inteira; não confundir memória estática do Godot com RAM total/VRAM.
 
 Comparação headless da cena carregada (tests/measure_startup.gd): mundo aberto arquivado, 5126 ms / 505,1 MiB estáticos / 9427 nodes; menu competitivo, 739 ms / 30,5 MiB / 122 nodes. Rodados em processos separados simultâneos, sem controle de cache do SO; indicam redução de carga, não benchmark de latência universal. Nos snapshots renderizados anteriores, o menu antigo tinha 1878 draw calls/217,4 MiB; o novo menu tem 20 draw calls/cerca de 40 MiB. As cenas diferem e os números não são uma prova isolada de ganho de GPU.
 
