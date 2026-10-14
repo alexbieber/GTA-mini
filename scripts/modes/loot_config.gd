@@ -7,4 +7,5 @@ extends Resource
 @export var weapon_rounds := 60
 @export var ammo_rounds := 36
 @export var armor_amount := 40.0
+@export var plate_count := 2
 @export var heal_amount := 40.0

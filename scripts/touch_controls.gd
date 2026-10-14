@@ -17,6 +17,8 @@ var aiming := false
 var reload_pressed := false
 var crouch_pressed := false
 var cover_pressed := false
+var plate_pressed := false
+var view_pressed := false
 var _combat_buttons: Array[Button] = []
 
 var _stick_id := -1
@@ -85,6 +87,8 @@ func set_driving(on: bool) -> void:
 	reload_pressed = false
 	crouch_pressed = false
 	cover_pressed = false
+	plate_pressed = false
+	view_pressed = false
 	for button in _combat_buttons:
 		button.visible = not on
 	driving = on
@@ -169,7 +173,11 @@ func _build() -> void:
 	crouch_btn.pressed.connect(func() -> void: crouch_pressed = true)
 	var cover_btn := _action_button("COVER", Vector2(-432, -424))
 	cover_btn.pressed.connect(func() -> void: cover_pressed = true)
-	_combat_buttons.assign([fire_btn, aim_btn, reload_btn, crouch_btn, cover_btn])
+	var plate_btn := _action_button("PLACA", Vector2(-432, -118))
+	plate_btn.pressed.connect(func() -> void: plate_pressed = true)
+	var view_btn := _action_button("VISTA", Vector2(-564, -118))
+	view_btn.pressed.connect(func() -> void: view_pressed = true)
+	_combat_buttons.assign([fire_btn, aim_btn, reload_btn, crouch_btn, cover_btn, plate_btn, view_btn])
 	for button in _combat_buttons:
 		_root.add_child(button)
 

@@ -18,6 +18,8 @@ var _resume_phase := -1
 var loot_config := LootConfig.new()
 var player_team := 1
 var _melee_cooldowns: Dictionary = {}
+var tactical_config: TacticalConfig = preload("res://resources/tactical_default.tres")
+var _pickup_remaining := 0.0
 
 func _ready() -> void:
 	rules.config = load("res://resources/match_default.tres") as MatchConfig
@@ -56,6 +58,7 @@ func _restore_free() -> void:
 	p.owned_weapons.assign(_free_state.owned)
 	p.ammo = _free_state.ammo.duplicate()
 	p.magazines = _free_state.magazines.duplicate()
+	p.configure_tactical(null)
 	p.vitality.armor = _free_state.armor
 	game.phase = _free_state.phase
 	_free_state.clear()
@@ -86,6 +89,9 @@ func _cleanup() -> void:
 	_last_damage.clear()
 	_melee_cooldowns.clear()
 	_loot.clear()
+	_pickup_remaining = 0.0
+	if game.has_method("reset_trigger"): game.reset_trigger()
+	if game.hud.has_method("reset_feedback"): game.hud.reset_feedback()
 	zone = null
 	announcer.reset()
 	for entry in _ambient:
@@ -148,7 +154,8 @@ func start(selected: int) -> void:
 			actors[id] = actor
 		actor.global_position = spawn
 		actor.vitality.reset()
-		actor.vitality.armor = 0.0
+		actor.configure_tactical(tactical_config)
+		actor.vitality.armor = tactical_config.battle_starting_armor if selected == MatchRules.Mode.BATTLE else 0.0
 		actor.stamina = 100.0
 		actor.velocity = Vector3.ZERO
 		actor.locked = true
@@ -215,6 +222,7 @@ func _on_event(name: String, payload: Dictionary) -> void:
 	elif name == "RESPAWN":
 		var actor: Player = actors[payload.participant]
 		actor.vitality.reset()
+		actor.configure_tactical(tactical_config)
 		actor.global_position = rules.participants[payload.participant].spawn
 		actor.velocity = Vector3.ZERO
 		actor.visible = true
@@ -225,6 +233,7 @@ func _on_event(name: String, payload: Dictionary) -> void:
 		_last_damage.erase(payload.participant)
 	elif name == "ELIMINATION":
 		game.hud.add_elimination("%s → %s" % [payload.killer_name, payload.victim_name])
+		if payload.killer == 0: game.hud.set_banner("ELIMINAÇÃO CONFIRMADA")
 	elif name == "MATCH_FINISHED":
 		for actor: Player in actors.values():
 			actor.locked = true
@@ -269,6 +278,12 @@ func _process(delta: float) -> void:
 			for id in actors:
 				rules.capture(id)
 			arena.sync_objectives(rules.objectives)
+		if zone:
+			_pickup_remaining -= delta
+			if _pickup_remaining <= 0.0:
+				_pickup_remaining = 0.15
+				if rules.participants[0].alive:
+					_collect_loot(0, true, tactical_config.pickup_radius)
 	_update_hud()
 
 func _remove_actor(id: int) -> void:
@@ -295,12 +310,26 @@ func participant_for(actor: Node) -> int:
 			return id
 	return -1
 
-func apply_hit(attacker: int, actor: Node, amount: float) -> bool:
+func apply_hit(attacker: int, actor: Node, amount: float, bypass_armor := false) -> bool:
 	var id := participant_for(actor)
-	if id < 0 or not rules.can_damage(attacker, id):
+	if id < 0 or amount <= 0.0 or (actor as Player).locked or not rules.can_damage(attacker, id):
 		return false
 	_last_damage[id] = attacker
-	(actor as Player).take_damage(amount)
+	var target := actor as Player
+	var before := target.vitality.armor
+	target.take_damage(amount, bypass_armor)
+	if id == 0 and amount > 0.0 and game.hud.has_method("show_damage"):
+		var direction := Vector2.ZERO
+		if actors.has(attacker):
+			var to: Vector3 = actors[attacker].global_position - target.global_position
+			var local := Basis(Vector3.UP, game.camera.yaw).inverse() * to
+			direction = Vector2(local.x, local.z).normalized()
+		game.hud.show_damage(direction, bypass_armor)
+	if attacker == 0 and game.hud.has_method("confirm_hit"):
+		if game.get("competitive_only") == true:
+			game.hud.confirm_hit(before > target.vitality.armor, before > 0.0 and target.vitality.armor <= 0.0)
+		else:
+			game.hud.confirm_hit()
 	return true
 
 func melee(id: int) -> bool:
@@ -318,14 +347,13 @@ func melee(id: int) -> bool:
 		if hit and hit.collider == target:
 			_melee_cooldowns[id] = rules.elapsed + rules.config.melee_interval
 			if apply_hit(id, target, rules.config.melee_damage):
-				if id == 0: game.hud.confirm_hit()
 				return true
 	return false
 
 func _zone_damage(amount: float) -> void:
 	for id in actors:
 		if rules.participants[id].alive and not zone.contains(actors[id].global_position):
-			apply_hit(-1, actors[id], amount)
+			apply_hit(-1, actors[id], amount, true)
 
 func interact_player() -> bool:
 	if not competitive() or rules.state != MatchRules.State.ACTIVE or not rules.participants[0].alive or game.player.in_vehicle:
@@ -337,7 +365,8 @@ func interact_player() -> bool:
 			return true
 	if game.player.global_position.distance_to(arena.bases[player_team]) < 5.0 and rules.carried_by(0) == null:
 		game.player.ammo[game.player.weapon] = maxi(int(game.player.ammo.get(game.player.weapon, 0)), 120)
-		game.hud.set_banner("ARSENAL · RESERVA REPOSTA")
+		game.player.add_plates(tactical_config.plate_capacity)
+		game.hud.set_banner("ARSENAL · MUNIÇÃO E PLACAS REPOSTAS")
 		return true
 	return false
 
@@ -374,6 +403,7 @@ func decide_bot(bot: MatchBot) -> void:
 			nearest = distance
 			enemy = other
 	if enemy >= 0:
+		bot.cancel_plate()
 		bot.last_seen = actors[enemy].global_position
 		bot.memory_until = rules.elapsed + 5.0
 		bot.bot_state = "ATTACK"
@@ -397,6 +427,8 @@ func decide_bot(bot: MatchBot) -> void:
 		bot.move_to(_nearest_loot(bot.global_position, true))
 		_collect_loot(id)
 		return
+	if bot.vitality.armor < tactical_config.armor_maximum and bot.armor_plates > 0:
+		bot.request_plate()
 	if zone:
 		bot.bot_state = "HUNT"
 		if bot.memory_until > rules.elapsed:
@@ -462,7 +494,8 @@ func _bot_fire(bot: MatchBot, victim: int) -> void:
 	if hit:
 		to = hit.position
 		if hit.collider is Player:
-			apply_hit(bot.participant_id, hit.collider, rules.config.bot_damage)
+			var data := Arsenal.data(bot.weapon)
+			apply_hit(bot.participant_id, hit.collider, rules.config.bot_damage * data.damage_at(from.distance_to(to)) / maxf(data.damage, 0.01))
 		elif hit.collider is Vehicle:
 			hit.collider.apply_damage(rules.config.bot_damage)
 	game.shot_effects.emit_shot(from, to, not hit.is_empty())
@@ -484,7 +517,7 @@ func _spawn_loot() -> void:
 		arena.add_child(view)
 		view.global_position = at + Vector3.UP * 0.2
 		var tag := Label3D.new()
-		tag.text = ["ARMA", "MUNIÇÃO", "PROTEÇÃO", "CURA"][clampi(kind, 0, 3)]
+		tag.text = ["ARMA", "MUNIÇÃO", "PLACAS", "CURA"][clampi(kind, 0, 3)]
 		tag.font_size = 24
 		tag.position.y = 0.6
 		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -503,13 +536,17 @@ func _nearest_loot(at: Vector3, weapon_only := false) -> Vector3:
 			result = item.position
 	return result
 
-func _collect_loot(id: int) -> bool:
+func _collect_loot(id: int, automatic_only := false, radius := -1.0) -> bool:
+	if not actors.has(id) or rules.state != MatchRules.State.ACTIVE or not rules.participants[id].alive: return false
 	var actor: Player = actors[id]
 	for item in _loot:
-		if not item.available or actor.global_position.distance_to(item.position) > rules.config.interaction_distance:
+		if automatic_only and item.kind not in [1, 2]: continue
+		if not item.available or actor.global_position.distance_to(item.position) > (radius if radius >= 0.0 else rules.config.interaction_distance):
 			continue
-		if (item.kind == 2 and actor.vitality.armor >= 100.0) or (item.kind == 3 and actor.health >= actor.vitality.maximum):
+		if (item.kind == 2 and actor.armor_plates >= tactical_config.plate_capacity) or (item.kind == 3 and actor.health >= actor.vitality.maximum):
 			continue
+		var query := PhysicsRayQueryParameters3D.create(actor.global_position + Vector3.UP * 0.75, item.position + Vector3.UP * 0.3, 1)
+		if not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(): continue
 		item.available = false
 		item.mesh.visible = false
 		match item.kind:
@@ -517,10 +554,10 @@ func _collect_loot(id: int) -> bool:
 			1:
 				if actor.weapon == Arsenal.Id.NONE: actor.give_weapon(Arsenal.Id.PISTOL, loot_config.ammo_rounds)
 				else: actor.add_ammo(loot_config.ammo_rounds)
-			2: actor.vitality.armor = minf(actor.vitality.armor + loot_config.armor_amount, 100.0)
+			2: actor.add_plates(loot_config.plate_count)
 			3: actor.heal(loot_config.heal_amount)
 		if id == 0:
-			game.hud.set_banner("LOOT COLETADO")
+			game.hud.set_banner(["ARMA EQUIPADA", "MUNIÇÃO COLETADA", "+%d PLACAS · 4 PARA APLICAR" % loot_config.plate_count, "CURA COLETADA"][item.kind])
 		return true
 	return false
 
@@ -533,6 +570,7 @@ func _update_hud() -> void:
 		status += "  ·  VIVOS %d/%d" % [rules.alive_ids().size(), rules.participants.size()]
 	game.hud.set_mode_text(status)
 	game.hud.set_stats(game.player.health, game.money, game.player.weapon_label())
+	if game.hud.has_method("set_tactical"): game.hud.set_tactical(game.player)
 	game.hud.set_combat(game.player.weapon != Arsenal.Id.NONE and not game.player.locked and not game.player.in_vehicle, game.player.aiming, game.player.velocity.length())
 	if rules.state == MatchRules.State.COUNTDOWN:
 		game.hud.set_objective("COMEÇA EM %d" % ceili(rules.countdown))
@@ -543,11 +581,24 @@ func _update_hud() -> void:
 		return
 	if zone:
 		game.hud.set_objective("%s %ds · Zona %d · raio %.0fm" % ["FECHANDO" if zone.closing else "FECHA EM", ceili(zone.remaining), zone.phase + 1, zone.radius])
-		game.hud.set_prompt("E · coletar loot   R · recarregar   Tab · menu")
+		var nearby := nearby_loot()
+		game.hud.set_prompt(("E · " + nearby if nearby != "" else "E · loot") + "   4 · placas   R · recarregar   V · câmera   Tab · menu")
 		game.touch.set_can_interact(true, "LOOT / CAR")
 	else:
 		var carried := rules.carried_by(0)
 		var deposit := "POLÍCIA" if player_team == 0 else "AURORA"
 		game.hud.set_objective("PACOTE: %s · leve ao depósito %s" % [carried.label, deposit] if carried else "Roube os pacotes adversários · 5 capturas vencem · E na base repõe reserva")
-		game.hud.set_prompt("E · objetivo / arsenal   G · derrubar pacote   C · cobertura   R · recarregar   Tab · menu")
+		game.hud.set_prompt("E · objetivo / arsenal   G · pacote   4 · placas   C · cobertura   V · câmera   Tab · menu")
 		game.touch.set_can_interact(true, "PACOTE / CAR")
+
+func nearby_loot() -> String:
+	var best := rules.config.interaction_distance
+	var caption := ""
+	for item in _loot:
+		var distance: float = game.player.global_position.distance_to(item.position)
+		if not item.available or distance > best: continue
+		var query := PhysicsRayQueryParameters3D.create(game.player.global_position + Vector3.UP * 0.75, item.position + Vector3.UP * 0.3, 1)
+		if not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(): continue
+		best = distance
+		caption = [Arsenal.data(item.weapon).label, "coletar munição", "coletar placas", "coletar cura"][item.kind]
+	return caption

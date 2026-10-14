@@ -16,6 +16,8 @@ var active_aircraft: Node3D
 var _firing := false
 var _settings := ConfigFile.new()
 var master_volume := 1.0
+var _pending_shot := 0.0
+var _last_sprint_press := -1000
 
 func _ready() -> void:
 	CombatInput.install()
@@ -25,6 +27,7 @@ func _ready() -> void:
 	camera.add_to_group("camera_rig")
 	add_child(camera)
 	camera.arm_length = 5.0
+	camera.set_first_person(true)
 	camera.camera().far = 280.0
 	camera.set_process(false)
 	touch = TouchControls.new()
@@ -52,7 +55,9 @@ func ensure_player() -> void:
 	camera.set_process(true)
 
 func release_player() -> void:
+	if player: player.set_first_person_visual(false)
 	camera.follow = null
+	camera._view_model.visible = false
 	camera.set_process(false)
 	if player:
 		remove_child(player)
@@ -87,6 +92,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera.add_look(event.relative)
 	if event.is_action_pressed("jump"):
 		player.request_jump()
+	if event.is_action_pressed("armor_plate"):
+		player.request_plate()
+	if event.is_action_pressed("camera_view"):
+		camera.set_first_person(not camera.first_person)
+		save_settings()
+	if event.is_action_pressed("sprint") and not event.is_echo():
+		var now := Time.get_ticks_msec()
+		if now - _last_sprint_press < 300: player.request_tactical_sprint()
+		_last_sprint_press = now
 	if event.is_action_pressed("reload"):
 		player.request_reload()
 	if event.is_action_pressed("interact"):
@@ -115,13 +129,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				matches.return_menu()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if player == null or not matches.competitive(): return
 	var look := touch.consume_look()
 	if look != Vector2.ZERO: camera.add_look(look, true)
 	if touch.consume_jump(): player.request_jump()
 	if touch.consume_interact(): matches.interact_player()
 	if touch.consume_punch(): matches.melee(0)
+	if touch.plate_pressed:
+		touch.plate_pressed = false
+		player.request_plate()
+	if touch.view_pressed:
+		touch.view_pressed = false
+		camera.set_first_person(not camera.first_person)
+		save_settings()
 	if touch.reload_pressed:
 		touch.reload_pressed = false
 		player.request_reload()
@@ -135,12 +156,18 @@ func _process(_delta: float) -> void:
 	touch.was_firing = touch.firing
 	if (_firing or touch.firing) and player.weapon != Arsenal.Id.NONE and Arsenal.data(player.weapon).automatic:
 		_try_fire()
+	if _pending_shot > 0.0:
+		_pending_shot = maxf(_pending_shot - delta, 0.0)
+		_try_fire()
 
 func _try_fire() -> void:
 	if player == null or matches.rules.state != MatchRules.State.ACTIVE:
 		return
 	var shot := player.spend_shot()
-	if shot.is_empty(): return
+	if shot.is_empty():
+		if player.sprint_to_fire_remaining > 0.0: _pending_shot = 0.25
+		return
+	_pending_shot = 0.0
 	var data := Arsenal.data(player.weapon)
 	var cam := camera.camera()
 	var spread := data.spread * (data.ads_spread_multiplier if player.aiming else 1.0)
@@ -151,10 +178,10 @@ func _try_fire() -> void:
 	var hit: Dictionary = result.hit
 	if hit and hit.collider is Player:
 		var height: float = hit.position.y - hit.collider.global_position.y
-		var multiplier := data.head_multiplier if height > 1.3 else (data.limb_multiplier if height < 0.6 else 1.0)
-		if matches.apply_hit(0, hit.collider, data.damage * multiplier):
-			hud.confirm_hit()
-			if height > 1.3: matches.bus.publish("HEADSHOT", {"participant": 0})
+		var head_height := 0.82 if hit.collider.crouched else 1.3
+		var multiplier := data.head_multiplier if height > head_height else (data.limb_multiplier if height < 0.4 else 1.0)
+		if matches.apply_hit(0, hit.collider, data.damage_at(muzzle.distance_to(hit.position)) * multiplier):
+			if height > head_height: matches.bus.publish("HEADSHOT", {"participant": 0})
 	shot_effects.emit_shot(muzzle, result.end, not hit.is_empty())
 	camera.kick(data)
 
@@ -166,6 +193,7 @@ func _load_settings() -> void:
 	camera.mouse_sens = float(_settings.get_value("settings", "mouse_sens", 0.0032))
 	camera.ads_sensitivity = float(_settings.get_value("settings", "ads_sens", 0.55))
 	set_master_volume(float(_settings.get_value("settings", "master_volume", 1.0)))
+	camera.set_first_person(bool(_settings.get_value("settings", "first_person", true)))
 	if not _settings.has_section("bindings"): return
 	for action in _settings.get_section_keys("bindings"):
 		if InputMap.has_action(action):
@@ -179,6 +207,7 @@ func save_settings() -> void:
 	_settings.set_value("settings", "mouse_sens", camera.mouse_sens)
 	_settings.set_value("settings", "ads_sens", camera.ads_sensitivity)
 	_settings.set_value("settings", "master_volume", master_volume)
+	_settings.set_value("settings", "first_person", camera.first_person)
 	for action in MatchHUD.ACTION_LABELS:
 		_settings.set_value("bindings", action, InputMap.action_get_events(action))
 	_settings.save("user://competitive_settings.cfg")
@@ -186,3 +215,8 @@ func save_settings() -> void:
 func set_master_volume(value: float) -> void:
 	master_volume = clampf(value, 0.0, 1.0)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), linear_to_db(maxf(master_volume, 0.0001)))
+
+func reset_trigger() -> void:
+	_firing = false
+	_pending_shot = 0.0
+	_last_sprint_press = -1000

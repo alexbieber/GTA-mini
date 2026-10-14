@@ -46,11 +46,26 @@ var _punch_cd := 0.0
 var _fire_cd := 0.0
 var _anim: AnimationPlayer
 var locomotion := Movement.new()
+var tactical: TacticalConfig
+var armor_plates := 0
+var plate_remaining := 0.0
+var sprint_to_fire_remaining := 0.0
+var sprinting := false
+var _sprint_block_remaining := 0.0
+var first_person_visual := false
+var vault_remaining := 0.0
+var _vault_points: Array[Vector3] = []
+var _vault_stage := 0
+var _vault_stage_time := 0.0
 
 
 func request_jump() -> void:
 	if not locked and not in_vehicle:
+		if vault_remaining > 0.0: return
 		exit_cover()
+		if tactical and try_mantle(): return
+		if tactical and slide_remaining > 0.0 and set_crouched(false):
+			slide_remaining = 0.0
 		locomotion.request_jump()
 
 
@@ -102,11 +117,18 @@ func _physics_process(delta: float) -> void:
 		locomotion.reset()
 		return
 	tick_combat(delta)
+	if vault_remaining > 0.0:
+		_tick_mantle(delta)
+		return
 	slide_cooldown = maxf(slide_cooldown - delta, 0.0)
 	tactical_cooldown = maxf(tactical_cooldown - delta, 0.0)
 	tactical_remaining = maxf(tactical_remaining - delta, 0.0)
 	var touch_input := get_tree().get_first_node_in_group("touch") as TouchControls
-	aiming = weapon != Arsenal.Id.NONE and (Input.is_action_pressed("aim") or (touch_input != null and touch_input.aiming)) and slide_remaining <= 0.0
+	aiming = weapon != Arsenal.Id.NONE and (Input.is_action_pressed("aim") or (touch_input != null and touch_input.aiming)) and slide_remaining <= 0.0 and plate_remaining <= 0.0
+	if tactical and aiming:
+		tactical_remaining = 0.0
+	if tactical and Input.is_action_pressed("armor_plate"):
+		request_plate()
 	if Input.is_action_just_pressed("crouch"):
 		request_crouch()
 	if Input.is_action_just_pressed("cover"):
@@ -115,9 +137,8 @@ func _physics_process(delta: float) -> void:
 		exit_cover()
 	if in_cover and _cover_low:
 		set_crouched(not aiming)
-	if Input.is_action_just_pressed("tactical_sprint") and tactical_cooldown <= 0.0 and stamina > 30.0 and is_on_floor() and not crouched and not in_cover and not aiming and reload_remaining <= 0.0 and _move_input().length_squared() > 0.05:
-		tactical_remaining = 1.4
-		tactical_cooldown = 4.0
+	if Input.is_action_just_pressed("tactical_sprint"):
+		request_tactical_sprint()
 	var grounded := is_on_floor()
 	if locomotion.tick(delta, grounded):
 		velocity.y = Movement.JUMP_SPEED
@@ -140,7 +161,8 @@ func _physics_process(delta: float) -> void:
 			dir = tangent * dir.dot(tangent)
 	var touch := get_tree().get_first_node_in_group("touch") as TouchControls
 	var sprint_input := Input.is_action_pressed("sprint") or (touch != null and touch.sprint)
-	var want_sprint := (sprint_input or tactical_remaining > 0.0) and stamina > 4.0 and not aiming and not crouched and not in_cover and reload_remaining <= 0.0
+	var want_sprint := (sprint_input or tactical_remaining > 0.0) and stamina > 4.0 and not aiming and not crouched and not in_cover and reload_remaining <= 0.0 and plate_remaining <= 0.0 and _sprint_block_remaining <= 0.0
+	sprinting = want_sprint and dir.length_squared() > 0.05
 	if want_sprint and dir.length_squared() > 0.05:
 		stamina = maxf(stamina - 18.0 * delta, 0.0)
 	else:
@@ -179,12 +201,13 @@ func _physics_process(delta: float) -> void:
 	if aiming: movement_state = "Aim"
 	if reload_remaining > 0.0: movement_state = "Reload"
 	if slide_remaining > 0.0: movement_state = "Slide"
+	if plate_remaining > 0.0: movement_state = "Armor Plate"
 	if not is_on_floor(): movement_state = "Jump" if velocity.y > 0.0 else "Fall"
 	elif not grounded: movement_state = "Land"
 	if _visual:
 		_visual.scale.y = lerpf(_visual.scale.y, _visual_scale.y * (0.65 if crouched else 1.0), 1.0 - exp(-16.0 * delta))
 	if _gun:
-		_gun.visible = weapon != Arsenal.Id.NONE
+		_gun.visible = weapon != Arsenal.Id.NONE and not first_person_visual and plate_remaining <= 0.0
 		_gun_kick = move_toward(_gun_kick, 0.0, delta * 0.5)
 		_gun.position = Vector3(0.32, 0.82 if crouched else 1.22, -0.38 + _gun_kick)
 		_gun.rotation.x = (cam.pitch if cam else 0.0) - (0.5 if reload_remaining > 0.0 else 0.0)
@@ -207,10 +230,11 @@ func _move_input() -> Vector2:
 	return v.limit_length(1.0)
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, bypass_armor := false) -> void:
 	if locked:
 		return
-	vitality.apply_damage(amount)
+	if amount > 0.0: cancel_plate()
+	vitality.apply_damage(amount, 1.0, bypass_armor)
 
 
 func heal(amount: float) -> void:
@@ -243,6 +267,7 @@ func give_weapon(id: int, rounds := -1) -> void:
 		return
 	if not owned_weapons.has(id):
 		owned_weapons.append(id)
+	cancel_plate()
 	weapon = id
 	reload_remaining = 0.0
 	var extra: int = rounds if rounds >= 0 else int(Arsenal.spec(id)["ammo"])
@@ -260,6 +285,7 @@ func add_ammo(rounds := 40) -> void:
 
 
 func cycle_weapon(dir: int) -> void:
+	cancel_plate()
 	if owned_weapons.is_empty():
 		weapon = Arsenal.Id.NONE
 		return
@@ -273,23 +299,32 @@ func cycle_weapon(dir: int) -> void:
 
 func select_weapon(id: int) -> bool:
 	if id == Arsenal.Id.NONE:
+		cancel_plate()
 		weapon = Arsenal.Id.NONE
 		reload_remaining = 0.0
 		return true
 	if not owned_weapons.has(id):
 		return false
+	cancel_plate()
 	weapon = id
 	reload_remaining = 0.0
 	return true
 
 
 func can_fire() -> bool:
-	if in_vehicle or locked or health <= 0.0 or weapon == Arsenal.Id.NONE or _fire_cd > 0.0 or reload_remaining > 0.0 or slide_remaining > 0.0 or tactical_remaining > 0.0:
+	if in_vehicle or locked or health <= 0.0 or weapon == Arsenal.Id.NONE or _fire_cd > 0.0 or reload_remaining > 0.0 or slide_remaining > 0.0 or tactical_remaining > 0.0 or plate_remaining > 0.0 or sprint_to_fire_remaining > 0.0 or vault_remaining > 0.0:
 		return false
 	return int(magazines.get(weapon, 0)) > 0
 
 
 func spend_shot() -> Dictionary:
+	if tactical and not locked and not in_vehicle and health > 0.0:
+		cancel_plate()
+		if sprinting or tactical_remaining > 0.0:
+			tactical_remaining = 0.0
+			sprinting = false
+			sprint_to_fire_remaining = tactical.sprint_to_fire_seconds
+			_sprint_block_remaining = 0.3
 	if not can_fire():
 		return {}
 	var spec := Arsenal.spec(weapon)
@@ -307,15 +342,27 @@ func weapon_label() -> String:
 	return "%s  %d / %d%s" % [Arsenal.spec(weapon)["name"], int(magazines.get(weapon, 0)), int(ammo.get(weapon, 0)), "  RELOADING" if reload_remaining > 0.0 else ""]
 
 func request_reload() -> bool:
-	if locked or in_vehicle or weapon == Arsenal.Id.NONE or reload_remaining > 0.0:
+	if locked or in_vehicle or weapon == Arsenal.Id.NONE or reload_remaining > 0.0 or vault_remaining > 0.0:
 		return false
 	if int(ammo.get(weapon, 0)) <= 0 or int(magazines.get(weapon, 0)) >= Arsenal.data(weapon).magazine_size:
 		return false
+	cancel_plate()
 	_reload_weapon = weapon
 	reload_remaining = Arsenal.data(weapon).reload_seconds
 	return true
 
 func tick_combat(delta: float) -> void:
+	vitality.tick(delta)
+	sprint_to_fire_remaining = maxf(sprint_to_fire_remaining - delta, 0.0)
+	_sprint_block_remaining = maxf(_sprint_block_remaining - delta, 0.0)
+	if plate_remaining > 0.0:
+		if locked or in_vehicle or health <= 0.0:
+			cancel_plate()
+		else:
+			plate_remaining = maxf(plate_remaining - delta, 0.0)
+			if plate_remaining == 0.0 and tactical and armor_plates > 0:
+				armor_plates -= 1
+				vitality.armor = minf(vitality.armor + tactical.plate_value, tactical.armor_maximum)
 	_fire_cd = maxf(_fire_cd - delta, 0.0)
 	combat_remaining = maxf(combat_remaining - delta, 0.0)
 	if reload_remaining <= 0.0:
@@ -327,6 +374,12 @@ func tick_combat(delta: float) -> void:
 		ammo[weapon] -= amount
 
 func reset_combat() -> void:
+	cancel_plate()
+	sprint_to_fire_remaining = 0.0
+	_sprint_block_remaining = 0.0
+	sprinting = false
+	vault_remaining = 0.0
+	_vault_points.clear()
 	exit_cover()
 	aiming = false
 	reload_remaining = 0.0
@@ -334,6 +387,113 @@ func reset_combat() -> void:
 	slide_remaining = 0.0
 	tactical_remaining = 0.0
 	_fire_cd = 0.0
+
+func configure_tactical(config: TacticalConfig) -> void:
+	tactical = config
+	vitality.armor_first = config != null
+	vitality.regeneration_delay = config.regeneration_delay if config else 0.0
+	vitality.regeneration_per_second = config.regeneration_per_second if config else 0.0
+	armor_plates = config.starting_plates if config else 0
+	reset_combat()
+
+func request_plate() -> bool:
+	if tactical == null or locked or in_vehicle or health <= 0.0 or armor_plates <= 0 or vitality.armor >= tactical.armor_maximum or plate_remaining > 0.0 or reload_remaining > 0.0 or slide_remaining > 0.0 or vault_remaining > 0.0:
+		return false
+	plate_remaining = tactical.plate_seconds
+	tactical_remaining = 0.0
+	aiming = false
+	return true
+
+func cancel_plate() -> void:
+	plate_remaining = 0.0
+
+func add_plates(count: int) -> int:
+	if tactical == null: return 0
+	var before := armor_plates
+	armor_plates = clampi(armor_plates + maxi(count, 0), 0, tactical.plate_capacity)
+	return armor_plates - before
+
+func request_tactical_sprint() -> bool:
+	if locked or in_vehicle or health <= 0.0 or tactical_cooldown > 0.0 or stamina <= 30.0 or not is_on_floor() or crouched or in_cover or aiming or reload_remaining > 0.0 or plate_remaining > 0.0 or _sprint_block_remaining > 0.0 or _move_input().length_squared() <= 0.05:
+		return false
+	tactical_remaining = 1.4
+	tactical_cooldown = 4.0
+	return true
+
+func set_first_person_visual(on: bool) -> void:
+	first_person_visual = on
+	if _visual: _visual.visible = not on
+	if _gun: _gun.visible = not on and weapon != Arsenal.Id.NONE and plate_remaining <= 0.0
+
+func try_mantle() -> bool:
+	if tactical == null or locked or in_vehicle or health <= 0.0 or not is_on_floor() or vault_remaining > 0.0 or _move_input().length_squared() < 0.05:
+		return false
+	var cam := get_tree().get_first_node_in_group("camera_rig") as CameraRig
+	var yaw := cam.yaw if cam else rotation.y
+	var direction := (Basis(Vector3.UP, yaw) * Vector3(_move_input().x, 0, _move_input().y)).normalized()
+	var space := get_world_3d().direct_space_state
+	var low := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.4, global_position + Vector3.UP * 0.4 + direction * 1.15, 1, [get_rid()])
+	var obstacle := space.intersect_ray(low)
+	if obstacle.is_empty() or absf(obstacle.normal.y) > 0.3: return false
+	var over: Vector3 = obstacle.position + direction * 0.18
+	var high := global_position.y + tactical.mantle_maximum_height + 0.12
+	var top := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(over.x, high, over.z), Vector3(over.x, global_position.y + 0.2, over.z), 1))
+	if top.is_empty() or top.normal.y < 0.7: return false
+	var height: float = top.position.y - global_position.y
+	if height < 0.25 or height > tactical.mantle_maximum_height: return false
+	var across := global_position + direction * tactical.mantle_reach
+	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(across.x, high, across.z), Vector3(across.x, global_position.y - 0.25, across.z), 1))
+	if floor_hit.is_empty() or floor_hit.normal.y < 0.7: return false
+	var destination: Vector3 = floor_hit.position + Vector3.UP * 0.055
+	var raised := Vector3(global_position.x, maxf(top.position.y, destination.y) + 0.08, global_position.z)
+	var across_high := Vector3(destination.x, raised.y, destination.z)
+	var shape := CapsuleShape3D.new()
+	shape.radius = 0.34
+	shape.height = 1.72
+	# Validate all three segments with the standing capsule, including overhead space.
+	var path: Array[Vector3] = [global_position, raised, across_high, destination]
+	for i in 3:
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = shape
+		query.transform = Transform3D(Basis.IDENTITY, path[i] + Vector3.UP * 0.87)
+		query.motion = path[i + 1] - path[i]
+		query.exclude = [get_rid()]
+		query.collision_mask = collision_mask
+		query.margin = 0.001
+		if not space.intersect_shape(query, 1).is_empty() or space.cast_motion(query)[0] < 0.999:
+			return false
+	if not set_crouched(false): return false
+	exit_cover()
+	cancel_plate()
+	slide_remaining = 0.0
+	tactical_remaining = 0.0
+	sprinting = false
+	_vault_points = path
+	_vault_stage = 0
+	_vault_stage_time = 0.0
+	vault_remaining = 0.42
+	velocity = Vector3.ZERO
+	return true
+
+func _tick_mantle(delta: float) -> void:
+	if vault_remaining <= 0.0 or _vault_points.size() != 4: return
+	var durations := [0.12, 0.17, 0.13]
+	var budget := delta
+	while budget > 0.0 and _vault_stage < 3:
+		var consumed := minf(budget, durations[_vault_stage] - _vault_stage_time)
+		_vault_stage_time += consumed
+		budget -= consumed
+		var target := _vault_points[_vault_stage].lerp(_vault_points[_vault_stage + 1], clampf(_vault_stage_time / durations[_vault_stage], 0.0, 1.0))
+		if move_and_collide(target - global_position):
+			vault_remaining = 0.0
+			velocity = Vector3.ZERO
+			return
+		vault_remaining = maxf(vault_remaining - consumed, 0.0)
+		if _vault_stage_time >= durations[_vault_stage] - 0.000001:
+			_vault_stage += 1
+			_vault_stage_time = 0.0
+	if _vault_stage >= 3: vault_remaining = 0.0
+	movement_state = "Mantle" if vault_remaining > 0.0 else "Idle"
 
 func request_crouch() -> void:
 	if locked or in_vehicle:

@@ -19,6 +19,14 @@ extends Resource
 @export var limb_multiplier := 0.75
 @export var automatic := false
 @export var price := 250
+@export_range(0.0, 1.0) var minimum_damage_ratio := 0.55
+@export var falloff_start := 0.0
+
+func damage_at(distance: float) -> float:
+	if distance > effective_range: return 0.0
+	var start := falloff_start if falloff_start > 0.0 else effective_range * 0.45
+	var weight := clampf((distance - start) / maxf(effective_range - start, 0.01), 0.0, 1.0)
+	return damage * lerpf(1.0, minimum_damage_ratio, weight)
 
 func as_dictionary() -> Dictionary:
 	return {"name": label, "dmg": damage, "range": effective_range,

@@ -19,7 +19,10 @@ var _result_heading: Label
 var _result_standings: Label
 var _waiting_action := ""
 var _binding_button: Button
-const ACTION_LABELS := {"move_left": "Esquerda", "move_right": "Direita", "move_forward": "Avançar", "move_back": "Recuar", "jump": "Pular", "sprint": "Correr", "crouch": "Agachar / slide", "cover": "Cobertura", "aim": "Mira ADS", "fire": "Disparar", "reload": "Recarregar", "interact": "Interagir", "swap_shoulder": "Trocar ombro", "tactical_sprint": "Corrida tática", "drop_objective": "Soltar pacote", "return_menu": "Menu", "weapon_1": "Pistola", "weapon_2": "SMG", "weapon_3": "Fuzil", "cycle_weapon_up": "Próxima arma", "cycle_weapon_down": "Arma anterior", "graphics_profile": "Qualidade", "melee": "Corpo a corpo"}
+var _tactical: Label
+var _plate_progress: ProgressBar
+var overlay: TacticalOverlay
+const ACTION_LABELS := {"move_left": "Esquerda", "move_right": "Direita", "move_forward": "Avançar", "move_back": "Recuar", "jump": "Pular", "sprint": "Correr", "crouch": "Agachar / slide", "cover": "Cobertura", "aim": "Mira ADS", "fire": "Disparar", "reload": "Recarregar", "interact": "Interagir", "swap_shoulder": "Trocar ombro", "tactical_sprint": "Corrida tática", "drop_objective": "Soltar pacote", "return_menu": "Menu", "weapon_1": "Pistola", "weapon_2": "SMG", "weapon_3": "Fuzil", "cycle_weapon_up": "Próxima arma", "cycle_weapon_down": "Arma anterior", "graphics_profile": "Qualidade", "melee": "Corpo a corpo", "armor_plate": "Aplicar placa", "camera_view": "Primeira / terceira pessoa"}
 var reticle: CombatReticle
 var _banner_remaining := 0.0
 var radar: Radar
@@ -83,7 +86,7 @@ func _build_menu() -> void:
 	_menu_content = VBoxContainer.new()
 	_menu_content.add_theme_constant_override("separation", 12)
 	box.add_child(_menu_content)
-	_menu_content.add_child(label("Dois mapas compactos. Combate em terceira pessoa.", 18))
+	_menu_content.add_child(label("Combate em primeira pessoa · V alterna a câmera", 18))
 	var team := OptionButton.new()
 	team.add_item("FACÇÃO FICTÍCIA · COLETIVO AURORA", 1)
 	team.add_item("POLÍCIA", 0)
@@ -107,6 +110,13 @@ func _show_settings() -> void:
 	_menu_content.visible = false
 	_settings_content.visible = true
 	_settings_content.add_child(label("CONFIGURAÇÕES", 24))
+	var view := CheckButton.new()
+	view.text = "Câmera em primeira pessoa"
+	view.button_pressed = game().camera.first_person
+	view.toggled.connect(func(on: bool) -> void:
+		game().camera.set_first_person(on)
+		game().save_settings())
+	_settings_content.add_child(view)
 	var quality := OptionButton.new()
 	for text in ["LOW", "MEDIUM", "HIGH"]: quality.add_item(text)
 	quality.select(game().clock.quality)
@@ -204,6 +214,10 @@ func _build_match() -> void:
 	_match.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_match.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_match)
+	overlay = TacticalOverlay.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_match.add_child(overlay)
 	reticle = CombatReticle.new()
 	reticle.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -237,6 +251,18 @@ func _build_match() -> void:
 	_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_banner.position = Vector2(-180, 115)
 	_match.add_child(_banner)
+	_tactical = label("", 16)
+	_tactical.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_tactical.position = Vector2(28, -146)
+	_match.add_child(_tactical)
+	_plate_progress = ProgressBar.new()
+	_plate_progress.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_plate_progress.position = Vector2(-115, -140)
+	_plate_progress.size = Vector2(230, 10)
+	_plate_progress.show_percentage = false
+	_plate_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_plate_progress.visible = false
+	_match.add_child(_plate_progress)
 
 func _build_results() -> void:
 	_results = panel()
@@ -284,7 +310,28 @@ func set_stats(health: float, _money: int, weapon := "", _speed := -1.0) -> void
 func set_combat(on: bool, ads: bool, speed: float) -> void:
 	reticle.visible = on
 	reticle.gap = 3.0 if ads else 8.0 + minf(speed, 10.0)
-func confirm_hit() -> void: reticle.hit_remaining = 0.15
+func confirm_hit(armored := false, broken := false) -> void:
+	reticle.hit_remaining = 0.25 if broken else 0.15
+	reticle.hit_color = Color("bc8cff") if broken else (Color("64c4dd") if armored else Color("f0a030"))
+	if broken: set_banner("ARMADURA QUEBRADA")
+
+func set_tactical(player: Player) -> void:
+	overlay.health = player.health
+	overlay.maximum = player.vitality.maximum
+	overlay.armor = player.vitality.armor
+	overlay.armor_maximum = player.tactical.armor_maximum if player.tactical else 150.0
+	_tactical.text = "PLACAS %d · ARMADURA %d · FÔLEGO %d" % [player.armor_plates, int(player.vitality.armor), int(player.stamina)]
+	_plate_progress.visible = player.plate_remaining > 0.0
+	if player.tactical:
+		_plate_progress.value = (1.0 - player.plate_remaining / player.tactical.plate_seconds) * 100.0
+
+func show_damage(direction: Vector2, gas := false) -> void:
+	overlay.damage(direction, gas)
+
+func reset_feedback() -> void:
+	overlay.reset()
+	reticle.hit_remaining = 0.0
+	_plate_progress.visible = false
 func set_wanted(_stars: int) -> void: pass
 func set_crime(_text: String) -> void: pass
 func set_distance(_distance: float, _label: String) -> void: pass

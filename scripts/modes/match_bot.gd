@@ -64,7 +64,7 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), 1.0 - exp(-12.0 * delta))
 	Models.play_move(_anim, direction.length_squared() > 0.01, true)
 	if _gun:
-		_gun.visible = true
+		_gun.visible = weapon != Arsenal.Id.NONE and plate_remaining <= 0.0
 		_gun.position = Vector3(0.32, 1.2, -0.4)
 
 func move_to(at: Vector3) -> void:

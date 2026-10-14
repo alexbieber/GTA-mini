@@ -13,6 +13,8 @@ static func install() -> void:
 	keys["weapon_3"] = KEY_3
 	keys["graphics_profile"] = KEY_F6
 	keys["melee"] = KEY_F
+	keys["armor_plate"] = KEY_4
+	keys["camera_view"] = KEY_V
 	for action in keys:
 		if InputMap.has_action(action):
 			continue
