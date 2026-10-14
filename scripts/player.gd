@@ -35,6 +35,7 @@ var _visual: Node3D
 var _visual_scale := Vector3.ONE
 var _gun: Node3D
 var _gun_kick := 0.0
+var uniform_color := Color.WHITE
 var _punch_cd := 0.0
 var _fire_cd := 0.0
 var _anim: AnimationPlayer
@@ -69,6 +70,9 @@ func _build_mesh() -> void:
 	add_child(made["root"])
 	_visual = made["root"]
 	Models.normalize_person(_visual)
+	for node in _visual.find_children("*", "MeshInstance3D", true, false):
+		if node.material_override is ShaderMaterial:
+			node.material_override.set_shader_parameter("shirt_color", uniform_color)
 	_visual_scale = _visual.scale
 	_anim = made["anim"]
 

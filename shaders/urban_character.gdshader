@@ -4,6 +4,7 @@ render_mode specular_schlick_ggx;
 uniform sampler2D palette_texture : source_color;
 uniform vec4 skin_color : source_color = vec4(0.22, 0.105, 0.055, 1.0);
 uniform vec4 denim_color : source_color = vec4(0.075, 0.16, 0.29, 1.0);
+uniform vec4 shirt_color : source_color = vec4(0.88, 0.88, 0.84, 1.0);
 uniform float mesh_height = 1.0;
 varying float arm_region;
 
@@ -17,7 +18,7 @@ void fragment() {
 	if (original.r > 0.65 && original.g > 0.45 && original.b < 0.8) {
 		color = skin_color.rgb;
 	} else if (original.b > original.r + 0.08 && original.g > 0.35) {
-		color = mix(vec3(0.88, 0.88, 0.84), skin_color.rgb, arm_region);
+		color = mix(shirt_color.rgb, skin_color.rgb, arm_region);
 	} else if (original.b > original.r + 0.08) {
 		color = denim_color.rgb;
 	} else if (original.r > original.b + 0.1 && original.g < 0.5) {

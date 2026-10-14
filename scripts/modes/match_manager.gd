@@ -16,6 +16,7 @@ var _zone_visual_remaining := 0.0
 var _last_player_announced := false
 var _resume_phase := -1
 var loot_config := LootConfig.new()
+var player_team := 1
 
 func _ready() -> void:
 	rules.config = load("res://resources/match_default.tres") as MatchConfig
@@ -30,6 +31,7 @@ func competitive() -> bool:
 	return arena != null and rules.mode != MatchRules.Mode.FREE
 
 func _save_free() -> void:
+	if game.get("competitive_only") == true: return
 	if not _free_state.is_empty():
 		return
 	var p: Player = game.player
@@ -42,6 +44,7 @@ func _save_free() -> void:
 		"phase": game.Phase.STEAL if game.phase == game.Phase.TITLE else game.phase}
 
 func _restore_free() -> void:
+	if game.get("competitive_only") == true: return
 	if _free_state.is_empty():
 		return
 	var p: Player = game.player
@@ -64,9 +67,10 @@ func _cleanup() -> void:
 	if game.active_aircraft:
 		game.active_aircraft.occupied = false
 		game.active_aircraft = null
-	game.player.in_vehicle = false
-	game.player.set_hidden(false)
-	game.player.reset_combat()
+	if game.player:
+		game.player.in_vehicle = false
+		game.player.set_hidden(false)
+		game.player.reset_combat()
 	game.camera.follow = game.player
 	game.camera.set_aircraft_mode(false)
 	game.touch.set_driving(false)
@@ -89,6 +93,7 @@ func _cleanup() -> void:
 	_ambient.clear()
 
 func start(selected: int) -> void:
+	if game.has_method("ensure_player"): game.ensure_player()
 	_cleanup()
 	_restore_free()
 	if game.phase == game.Phase.TITLE and _resume_phase >= 0:
@@ -119,7 +124,7 @@ func start(selected: int) -> void:
 	var count := rules.config.team_size * 2 if selected == MatchRules.Mode.CORRE else rules.config.battle_participants
 	var roster: Array = []
 	for id in count:
-		var team := (1 if id < rules.config.team_size else 0) if selected == MatchRules.Mode.CORRE else id
+		var team := (player_team if id < rules.config.team_size else 1 - player_team) if selected == MatchRules.Mode.CORRE else id
 		var spawn: Vector3
 		if selected == MatchRules.Mode.CORRE:
 			spawn = arena.bases[team] + Vector3(0, 0.1, float(id % rules.config.team_size) * 4.0 - 6.0)
@@ -171,11 +176,12 @@ func start(selected: int) -> void:
 		zone.reset(MatchArena.ORIGIN, arena.valid_zone_center)
 		_spawn_loot()
 		arena.sync_zone(zone.center, zone.radius)
-	for at in [Vector3(-72, 0.3, 42), Vector3(72, 0.3, -42)]:
-		var car := Vehicle.new()
-		car.kind = Vehicle.Kind.PARKED
-		arena.add_child(car)
-		car.setup(Vehicle.Kind.PARKED, MatchArena.ORIGIN + at, 0.0)
+	if game.get("competitive_only") != true:
+		for at in [Vector3(-72, 0.3, 42), Vector3(72, 0.3, -42)]:
+			var car := Vehicle.new()
+			car.kind = Vehicle.Kind.PARKED
+			arena.add_child(car)
+			car.setup(Vehicle.Kind.PARKED, MatchArena.ORIGIN + at, 0.0)
 	_last_player_announced = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if not DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_VISIBLE
 
@@ -193,6 +199,7 @@ func return_menu() -> void:
 	game.hud.show_start(true)
 	game.hud.set_mode_text("")
 	game.touch.visible = false
+	if game.has_method("release_player"): game.release_player()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func restart() -> void:
@@ -218,7 +225,7 @@ func _on_event(name: String, payload: Dictionary) -> void:
 	elif name == "MATCH_FINISHED":
 		for actor: Player in actors.values():
 			actor.locked = true
-		var win: bool = payload.winner == (1 if rules.mode == MatchRules.Mode.CORRE else 0)
+		var win: bool = payload.winner == (player_team if rules.mode == MatchRules.Mode.CORRE else 0)
 		var standings := ""
 		for member in rules.participants.values():
 			standings += "%s · %d eliminações / %d mortes\n" % [member.name, member.kills, member.deaths]
@@ -306,7 +313,7 @@ func interact_player() -> bool:
 	for item: ObjectiveState in rules.objectives.values():
 		if rules.interact(0, item.id):
 			return true
-	if game.player.global_position.distance_to(arena.bases[1]) < 5.0 and rules.carried_by(0) == null:
+	if game.player.global_position.distance_to(arena.bases[player_team]) < 5.0 and rules.carried_by(0) == null:
 		game.player.ammo[game.player.weapon] = maxi(int(game.player.ammo.get(game.player.weapon, 0)), 120)
 		game.hud.set_banner("ARSENAL · RESERVA REPOSTA")
 		return true
@@ -507,6 +514,7 @@ func _update_hud() -> void:
 		game.touch.set_can_interact(true, "LOOT / CAR")
 	else:
 		var carried := rules.carried_by(0)
-		game.hud.set_objective("PACOTE: %s · leve ao depósito AURORA" % carried.label if carried else "Roube os pacotes azuis · proteja os pacotes âmbar · 5 pontos vencem")
+		var deposit := "POLÍCIA" if player_team == 0 else "AURORA"
+		game.hud.set_objective("PACOTE: %s · leve ao depósito %s" % [carried.label, deposit] if carried else "Roube os pacotes adversários · 5 capturas vencem · E na base repõe reserva")
 		game.hud.set_prompt("E · objetivo / veículo   G · derrubar pacote   R · recarregar   Tab · menu")
 		game.touch.set_can_interact(true, "PACOTE / CAR")
