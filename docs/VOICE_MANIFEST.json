@@ -1,0 +1,102 @@
+[
+    {
+        "file":  "audio/announcer/faccao/base_under_attack.ogg",
+        "sha256":  "10458784F833AE43CE0E9708FAFFEA128240804FAA6978BC1D28F1AB074D74BD",
+        "bytes":  23127
+    },
+    {
+        "file":  "audio/announcer/faccao/defeat.ogg",
+        "sha256":  "BFF7180A9DACEBAE4974D35B2CF38314608BE5B4CC9C2ED32BAC27DC52903938",
+        "bytes":  27379
+    },
+    {
+        "file":  "audio/announcer/faccao/double_kill.ogg",
+        "sha256":  "E855AB5F95037F5965564A6B5593BB6AC9151EBE12979FDB3544082D99DC3CC6",
+        "bytes":  23519
+    },
+    {
+        "file":  "audio/announcer/faccao/final_circle.ogg",
+        "sha256":  "1B51C454A9F57C92B3B51470E2DFADADBFF8A86F3A978F0D654F7B43CBE9FABB",
+        "bytes":  39670
+    },
+    {
+        "file":  "audio/announcer/faccao/first_blood.ogg",
+        "sha256":  "6AD2B44F6FC08DB5DF50B6ADCB9BA5FB52098B3267BB5B7CF7338E6C8A49A116",
+        "bytes":  24452
+    },
+    {
+        "file":  "audio/announcer/faccao/headshot.ogg",
+        "sha256":  "E2F32C4543A09D81F5EDEA94694262E4E1AC8E490CD5DD531B7DA282FB4EF418",
+        "bytes":  26340
+    },
+    {
+        "file":  "audio/announcer/faccao/kill_streak_5.ogg",
+        "sha256":  "57232D78F62A1527BFF7E591C3B894145E9F23A9DD17D143BD4580B3907B0229",
+        "bytes":  24164
+    },
+    {
+        "file":  "audio/announcer/faccao/last_player.ogg",
+        "sha256":  "EE8892BC011B7B80D9CCB466F05596BB623E4871ADC6B029BAD0244D888A249D",
+        "bytes":  27471
+    },
+    {
+        "file":  "audio/announcer/faccao/low_ammo.ogg",
+        "sha256":  "640300BA04444E383D51DB45509037CAF41B42AC97E21D9CFEA49B5C94F9357D",
+        "bytes":  23445
+    },
+    {
+        "file":  "audio/announcer/faccao/match_start.ogg",
+        "sha256":  "9D1D40330411B05A3CCE13E5C0A4FFB28A73B38E88A72BDDAC659F609843D0D3",
+        "bytes":  26116
+    },
+    {
+        "file":  "audio/announcer/faccao/objective_returned.ogg",
+        "sha256":  "11638C145C7BF18891BBC0803F17B152AEADCD083F22983B87083529AFFDE6E3",
+        "bytes":  29435
+    },
+    {
+        "file":  "audio/announcer/faccao/objective_scored.ogg",
+        "sha256":  "6FB8EA0726819EEB01002073F17D29143BACC6094B56E8A9F1EB3DB4C3C523ED",
+        "bytes":  26710
+    },
+    {
+        "file":  "audio/announcer/faccao/objective_stolen.ogg",
+        "sha256":  "DB6861AC3E3A6BD800744E95309A627D0C125390ACECDB29142575CC4AADF8DF",
+        "bytes":  23898
+    },
+    {
+        "file":  "audio/announcer/faccao/player_eliminated.ogg",
+        "sha256":  "293EEB63C76F78597C6A506908D1261BF7366BBDC92529ED60A50CA88C5738A9",
+        "bytes":  25243
+    },
+    {
+        "file":  "audio/announcer/faccao/quad_kill.ogg",
+        "sha256":  "DC18CE5A820990EAA43F978847BF6D44882CEE9F258C8BDB1EAD68758FC0C27C",
+        "bytes":  31783
+    },
+    {
+        "file":  "audio/announcer/faccao/revenge.ogg",
+        "sha256":  "1BF3B1B751D0F1CD64D8DE4D2834E5727E568A17385D51C3FCDA8F1BF7CB5617",
+        "bytes":  26086
+    },
+    {
+        "file":  "audio/announcer/faccao/team_wipe.ogg",
+        "sha256":  "EB970DC8EC7A6AC9A06B2EEB0B61E49FD0901F132ED492FF3EA2A86721C1A153",
+        "bytes":  26727
+    },
+    {
+        "file":  "audio/announcer/faccao/triple_kill.ogg",
+        "sha256":  "4365877DDE87FC7BC6BEC00DC1C68AEE2C4EE0BC3AC41EFF2158C4DD7F6C643E",
+        "bytes":  34519
+    },
+    {
+        "file":  "audio/announcer/faccao/victory.ogg",
+        "sha256":  "454FF73159A5F6A054DDD397845677EBEE9FE2264FCC97C02C5302337EDBE967",
+        "bytes":  22751
+    },
+    {
+        "file":  "audio/announcer/faccao/zone_shrinking.ogg",
+        "sha256":  "C571C0D35CF972B4215A2C29436989555E7261422377E33BEB01AE3CA65DF7D9",
+        "bytes":  34723
+    }
+]

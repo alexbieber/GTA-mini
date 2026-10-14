@@ -90,6 +90,17 @@ func run() -> void:
 	manager.restart()
 	await process_frame
 	check(get_nodes_in_group("match_bots").size() == 9 and manager.rules.score == [0, 0], "restart clears actors objectives score and event residues")
+	manager.rules.tick(3.0)
+	for actor: Player in manager.actors.values(): actor.set_physics_process(false)
+	for capture_index in 5:
+		var objective: ObjectiveState = manager.rules.objectives["0:0"]
+		game.player.global_position = objective.position
+		manager.rules.participants[0].position = objective.position
+		manager.interact_player()
+		game.player.global_position = manager.arena.bases[1]
+		manager._process(0.01)
+		if capture_index < 4: manager.rules.tick(2.0)
+	check(manager.rules.score[1] == 5 and manager.rules.winner == 1 and game.hud._results.visible, "five physical-object captures complete 5v5 match with results")
 	manager.return_menu()
 	await process_frame
 	check(get_nodes_in_group("match_bots").is_empty() and manager.arena == null, "return menu removes competitive actors")

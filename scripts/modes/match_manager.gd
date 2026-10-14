@@ -93,6 +93,7 @@ func _cleanup() -> void:
 	_ambient.clear()
 
 func start(selected: int) -> void:
+	announcer.team_bank = "policia" if player_team == 0 else "faccao"
 	if game.has_method("ensure_player"): game.ensure_player()
 	_cleanup()
 	_restore_free()

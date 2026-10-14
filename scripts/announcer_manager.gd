@@ -3,7 +3,7 @@ extends Node
 signal subtitle_changed(message: String)
 signal subtitle_cleared
 
-const AUDIO_ROOT := "res://audio/announcer/"
+const AUDIO_ROOT := "res://audio/announcer/faccao/"
 const DEFAULT_PRIORITY := 10
 const PRIORITIES := {
     "first_blood": 70, "double_kill": 65, "triple_kill": 68,

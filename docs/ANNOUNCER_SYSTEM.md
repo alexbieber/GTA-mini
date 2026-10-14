@@ -1,0 +1,9 @@
+# Locutor por equipe
+
+As 20 gravações originais fornecidas pelo usuário foram movidas para audio/announcer/faccao sem conversão de áudio. SHA-256 verificado antes/depois de cada movimento; docs/VOICE_MANIFEST.json lista arquivo, tamanho e digest. Nenhuma voz sintética foi criada. Polícia está sem gravações e usa legenda; não recebe fallback da Facção. Banco shared reservado para áudio neutro autorizado; quando vazio, evento usa o banco do personagem escolhido, ou legenda.
+
+MatchEventBus entrega eventos reais a AnnouncerManager. Banco definido pela seleção Polícia/Facção no menu, incluindo Favela Royale. Eventos globais procuram shared primeiro. Eventos suportados: first blood, multikills do jogador em janela de 5 s, streak de 5 (zerado ao morrer), headshot, roubo/retorno/captura, base sob ataque, partida, zona, círculo final, último oponente, vitória/derrota. Capture mapeia objective_scored e início mapeia match_start dos arquivos existentes.
+
+Uma voz por vez, fila máxima 12, prioridade, expiração de 8 s, cooldown de 4 s por evento/participante. Triple/quad/streak substituem anúncios menores aguardando na fila; kills de outro bot não disparam multikill do jogador. Vozes variantes podem ficar em subdiretório do evento. Volume/desativação em Configurações; ao desativar, fila, legendas e reprodução param. Legenda acompanha a duração carregada do stream; na ausência de arquivo, dura 2,5 s. As transcrições específicas de cada gravação ainda requerem revisão auditiva manual.
+
+scenes/announcer_test.tscn preserva o testador separado, agora com fallback local do script fornecido, sem exigir Autoload. Ele testa o banco Facção. O jogo usa o gerente modular em scripts/modes/announcer_manager.gd. Reprodução de OGG e AudioStreamPlayer é verificada em testes com áudio Dummy; dispositivo WASAPI e escuta humana não foram validados neste ambiente.
