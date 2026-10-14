@@ -139,6 +139,7 @@ func _physics_process(delta: float) -> void:
 		speed = lerpf(3.0, 10.0, slide_remaining / 0.65)
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
+	try_step(Vector3(velocity.x, 0, velocity.z) * delta)
 	move_and_slide()
 	_punch_cd = maxf(_punch_cd - delta, 0.0)
 	if aiming or combat_remaining > 0.0:
@@ -356,6 +357,20 @@ func _build_gun() -> void:
 		mesh.position = Vector3(0, 0, -0.2) if part.z > 0.2 else Vector3(0, -0.12, -0.1)
 		_gun.add_child(mesh)
 	_gun.visible = false
+
+func try_step(motion: Vector3) -> void:
+	if not is_on_floor() or motion.length_squared() < 0.00001 or slide_remaining > 0.0:
+		return
+	if not test_move(global_transform, motion):
+		return
+	var lift := Vector3.UP * 0.26
+	if test_move(global_transform, lift):
+		return
+	var raised := global_transform.translated(lift)
+	if test_move(raised, motion):
+		return
+	if test_move(raised.translated(motion), Vector3.DOWN * 0.36):
+		global_position.y += 0.26
 
 
 func try_punch_officer() -> Pedestrian:

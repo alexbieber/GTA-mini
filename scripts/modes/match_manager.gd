@@ -119,6 +119,7 @@ func start(selected: int) -> void:
 			node.process_mode = Node.PROCESS_MODE_DISABLED
 			node.visible = false
 	arena = MatchArena.new()
+	arena.definition = load("res://resources/maps/%s.tres" % ("favela_royale" if selected == MatchRules.Mode.BATTLE else "protege_o_corre")) as ArenaDefinition
 	add_child(arena)
 	actors[0] = game.player
 	var count := rules.config.team_size * 2 if selected == MatchRules.Mode.CORRE else rules.config.battle_participants
@@ -127,10 +128,10 @@ func start(selected: int) -> void:
 		var team := (player_team if id < rules.config.team_size else 1 - player_team) if selected == MatchRules.Mode.CORRE else id
 		var spawn: Vector3
 		if selected == MatchRules.Mode.CORRE:
-			spawn = arena.bases[team] + Vector3(0, 0.1, float(id % rules.config.team_size) * 4.0 - 6.0)
+			spawn = arena.bases[team] + Vector3(0, 0.1, (float(id % rules.config.team_size) - float(rules.config.team_size - 1) * 0.5) * 4.0)
 		else:
 			var angle := TAU * float(id) / count
-			spawn = MatchArena.ORIGIN + Vector3(cos(angle) * 70.0, 0.1, sin(angle) * 70.0)
+			spawn = arena.nearest_clear(Vector3(cos(angle) * 90.0, 0.1, sin(angle) * 90.0))
 		var actor: Player
 		if id == 0:
 			actor = game.player
@@ -492,7 +493,7 @@ func _collect_loot(id: int) -> bool:
 	return false
 
 func _update_hud() -> void:
-	var mode_name := "PROTEGE O CORRE!" if rules.mode == MatchRules.Mode.CORRE else "ÚLTIMO SOBREVIVENTE"
+	var mode_name := "PROTEGE O CORRE!" if rules.mode == MatchRules.Mode.CORRE else "FAVELA ROYALE"
 	var status := "%s  ·  %02d:%02d" % [mode_name, int(rules.remaining) / 60, int(rules.remaining) % 60]
 	if rules.mode == MatchRules.Mode.CORRE:
 		status += "  ·  POLÍCIA %d × %d AURORA" % [rules.score[0], rules.score[1]]

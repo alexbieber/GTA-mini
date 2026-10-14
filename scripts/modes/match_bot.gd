@@ -56,6 +56,7 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction.x * (3.0 if bot_state == "ATTACK" else 4.8)
 	velocity.z = direction.z * (3.0 if bot_state == "ATTACK" else 4.8)
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
+	try_step(Vector3(velocity.x, 0, velocity.z) * delta)
 	move_and_slide()
 	if direction.length_squared() > 0.01:
 		rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), 1.0 - exp(-12.0 * delta))

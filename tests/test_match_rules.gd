@@ -99,6 +99,7 @@ func run() -> void:
 	check(rules.winner == -1 and rules.alive_ids().is_empty(), "simultaneous deaths yield deterministic draw")
 	check(not rules.first_blood == false and rules.objectives.is_empty() and rules.score == [0, 0], "new match clears objective and score residues")
 	var zone := SafeZoneController.new()
+	zone.config.initial_radius = 84.0
 	zone.config.waits = [1.0, 1.0]
 	zone.config.closures = [2.0, 2.0]
 	zone.config.ratios = [0.7, 0.2]

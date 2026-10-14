@@ -159,6 +159,8 @@ static func player_skin() -> String:
 
 static func instance_urban_player() -> Dictionary:
 	var made := _instance_real_person(REAL_MAN)
+	# Player normalizes once synchronously and retains that scale for crouch.
+	made["root"].set_script(null)
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://shaders/urban_character.gdshader")
 	material.set_shader_parameter("palette_texture", Palette.tex("res://assets/people/real/body.png"))

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ArenaDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/modes/arena_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+label = "FAVELA ROYALE"
+dimensions = Vector2(220, 220)
+favela = true
+base_distance = 84.0
