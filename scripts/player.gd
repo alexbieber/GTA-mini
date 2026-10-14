@@ -2,6 +2,7 @@ class_name Player
 extends CharacterBody3D
 
 const Models = preload("res://scripts/models.gd")
+const Movement = preload("res://scripts/locomotion.gd")
 
 const WALK_SPEED := 5.2
 const SPRINT_SPEED := 7.6
@@ -17,6 +18,12 @@ var ammo := {1: 0, 2: 0, 3: 0}
 var _punch_cd := 0.0
 var _fire_cd := 0.0
 var _anim: AnimationPlayer
+var locomotion := Movement.new()
+
+
+func request_jump() -> void:
+	if not locked and not in_vehicle:
+		locomotion.request_jump()
 
 
 func _ready() -> void:
@@ -49,8 +56,12 @@ func set_hidden(on: bool) -> void:
 func _physics_process(delta: float) -> void:
 	if in_vehicle or locked:
 		velocity = Vector3.ZERO
+		locomotion.reset()
 		return
-	if not is_on_floor():
+	var grounded := is_on_floor()
+	if locomotion.tick(delta, grounded):
+		velocity.y = Movement.JUMP_SPEED
+	elif not grounded:
 		velocity.y -= GRAVITY * delta
 	else:
 		velocity.y = 0.0
@@ -61,7 +72,9 @@ func _physics_process(delta: float) -> void:
 	var dir := (basis * Vector3(input.x, 0, input.y))
 	if dir.length_squared() > 1.0:
 		dir = dir.normalized()
-	var want_sprint := Input.is_physical_key_pressed(KEY_SHIFT) and stamina > 4.0
+	var touch := get_tree().get_first_node_in_group("touch") as TouchControls
+	var sprint_input := Input.is_physical_key_pressed(KEY_SHIFT) or (touch != null and touch.sprint)
+	var want_sprint := sprint_input and stamina > 4.0
 	if want_sprint and dir.length_squared() > 0.05:
 		stamina = maxf(stamina - 18.0 * delta, 0.0)
 	else:
@@ -75,7 +88,8 @@ func _physics_process(delta: float) -> void:
 	if dir.length_squared() > 0.05:
 		var target_yaw := atan2(-dir.x, -dir.z)
 		rotation.y = lerp_angle(rotation.y, target_yaw, 1.0 - exp(-12.0 * delta))
-	Models.play_move(_anim, dir.length_squared() > 0.05, want_sprint)
+	# Reuse shipped clips; a dedicated jump animation is still pending.
+	Models.play_move(_anim, is_on_floor() and dir.length_squared() > 0.05, want_sprint)
 
 
 func _move_input() -> Vector2:

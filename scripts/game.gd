@@ -191,6 +191,10 @@ func begin() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F6:
+		clock.set_quality((clock.quality + 1) % 3)
+		hud.set_banner("GRAPHICS: " + GraphicsProfile.label(clock.quality))
+		get_tree().create_timer(2.4).timeout.connect(func() -> void: hud.set_banner(""))
 	if event is InputEventKey and event.pressed and event.keycode == KEY_N:
 		clock.toggle()
 		hud.set_time_of_day(clock.is_night)
@@ -207,6 +211,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if event is InputEventKey and event.pressed and event.keycode == KEY_E:
 		_try_interact()
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE:
+		player.request_jump()
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
 		_try_punch()
 	if event is InputEventKey and event.pressed and event.keycode == KEY_R and phase in [Phase.BUSTED, Phase.WASTED]:
@@ -246,6 +252,8 @@ func _process(delta: float) -> void:
 			_try_interact()
 	if touch.consume_punch():
 		_try_punch()
+	if touch.consume_jump():
+		player.request_jump()
 
 	if phase in [Phase.BUSTED, Phase.WASTED]:
 		_end_timer += delta

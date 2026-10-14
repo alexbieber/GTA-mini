@@ -9,6 +9,8 @@ var interact_pressed := false
 var punch_pressed := false
 var handbrake := false
 var driving := false
+var jump_pressed := false
+var sprint := false
 
 var _stick_id := -1
 var _look_id := -1
@@ -22,6 +24,8 @@ var _enter_btn: Button
 var _gas_btn: Button
 var _brake_btn: Button
 var _punch_btn: Button
+var _jump_btn: Button
+var _sprint_btn: Button
 var _hint: Label
 
 
@@ -57,12 +61,23 @@ func _on_action_down() -> void:
 		punch_pressed = true
 
 
+func consume_jump() -> bool:
+	var v := jump_pressed
+	jump_pressed = false
+	return v
+
+
 func _on_action_up() -> void:
 	handbrake = false
 
 
 func set_driving(on: bool) -> void:
 	driving = on
+	jump_pressed = false
+	sprint = false
+	if _jump_btn:
+		_jump_btn.visible = not on
+		_sprint_btn.visible = not on
 	if _gas_btn:
 		_gas_btn.visible = on
 		_brake_btn.visible = on
@@ -119,6 +134,14 @@ func _build() -> void:
 	_punch_btn.button_down.connect(_on_action_down)
 	_punch_btn.button_up.connect(_on_action_up)
 	_root.add_child(_punch_btn)
+
+	_jump_btn = _action_button("JUMP", Vector2(-168, -322))
+	_jump_btn.pressed.connect(func() -> void: jump_pressed = true)
+	_root.add_child(_jump_btn)
+	_sprint_btn = _action_button("RUN", Vector2(-300, -322))
+	_sprint_btn.button_down.connect(func() -> void: sprint = true)
+	_sprint_btn.button_up.connect(func() -> void: sprint = false)
+	_root.add_child(_sprint_btn)
 
 	_hint = Label.new()
 	_hint.text = "Left stick move · drag right to look"
@@ -233,7 +256,7 @@ func _reset_knob() -> void:
 
 
 func _over_buttons(pos: Vector2) -> bool:
-	for b in [_enter_btn, _gas_btn, _brake_btn, _punch_btn]:
+	for b in [_enter_btn, _gas_btn, _brake_btn, _punch_btn, _jump_btn, _sprint_btn]:
 		if b and b.visible and b.get_global_rect().has_point(pos):
 			return true
 	return false

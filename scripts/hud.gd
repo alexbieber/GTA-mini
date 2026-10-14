@@ -236,7 +236,7 @@ func _build() -> void:
 	col.add_child(_tag)
 
 	_title = _label(64, Color("f0e6c8"))
-	_title.text = "NIGHT DROP"
+	_title.text = "OPERAÇÃO CAOS"
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_title)
 
@@ -273,7 +273,7 @@ func _build() -> void:
 	col.add_child(_start)
 
 	var keys := _label(13, Color(0.78, 0.76, 0.68, 0.8))
-	keys.text = "WASD  ·  mouse  ·  E enter  ·  click shoot  ·  1-3 guns  ·  N day/night"
+	keys.text = "WASD · Shift run · Space jump · E enter · click shoot · 1-3 guns · N day/night · F6 graphics"
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(keys)
 

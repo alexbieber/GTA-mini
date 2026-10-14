@@ -13,9 +13,11 @@ var vehicle_mode := false
 var aircraft_mode := false
 
 var _cam: Camera3D
+var _collision_sphere := SphereShape3D.new()
 
 
 func _ready() -> void:
+	_collision_sphere.radius = 0.25
 	_cam = Camera3D.new()
 	_cam.name = "Cam"
 	_cam.current = true
@@ -79,14 +81,7 @@ func _process(delta: float) -> void:
 	var back := global_transform.basis.z
 	var desired := global_position + back * (dist * cos(elev)) + Vector3.UP * (dist * sin(elev)) + global_transform.basis.x * 0.38
 	var from := global_position + Vector3(0, 0.2, 0)
-	var space := get_world_3d().direct_space_state
-	if space:
-		var q := PhysicsRayQueryParameters3D.create(from, desired, 1)
-		if follow is CollisionObject3D:
-			q.exclude = [(follow as CollisionObject3D).get_rid()]
-		var hit := space.intersect_ray(q)
-		if hit and from.distance_to(hit.position) > 3.0:
-			desired = hit.position + (from - desired).normalized() * 0.45
+	desired = resolve_obstruction(from, desired)
 	_cam.global_position = desired
 	if _cam.global_position.distance_squared_to(global_position) > 0.04:
 		_cam.look_at(global_position)
@@ -103,3 +98,27 @@ func _process(delta: float) -> void:
 
 func add_shake(amount: float) -> void:
 	shake = minf(shake + amount, 0.5)
+
+
+func resolve_obstruction(from: Vector3, desired: Vector3) -> Vector3:
+	var motion := desired - from
+	if motion.length_squared() < 0.0001:
+		return desired
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = _collision_sphere
+	query.transform = Transform3D(Basis.IDENTITY, from)
+	query.motion = motion
+	query.collision_mask = 1
+	query.margin = 0.03
+	if follow is CollisionObject3D:
+		query.exclude = [(follow as CollisionObject3D).get_rid()]
+	var fractions := space.cast_motion(query)
+	var safe_fraction := fractions[0]
+	# Also handle walls closer than the former three metre cutoff.
+	var ray := PhysicsRayQueryParameters3D.create(from, desired, 1, query.exclude)
+	var hit := space.intersect_ray(ray)
+	if hit:
+		var safe_distance := maxf(from.distance_to(hit.position) - 0.3, 0.0)
+		safe_fraction = minf(safe_fraction, safe_distance / motion.length())
+	return from + motion * safe_fraction

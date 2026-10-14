@@ -5,6 +5,7 @@ signal changed(night: bool)
 
 var is_night := true
 var city: City
+var quality := GraphicsProfile.Quality.LOW
 
 var _world: WorldEnvironment
 var _env: Environment
@@ -65,6 +66,12 @@ func _ready() -> void:
 	_fill.shadow_enabled = false
 	_fill.light_energy = 0.12
 	add_child(_fill)
+	set_quality(quality)
+
+
+func set_quality(value: int) -> void:
+	quality = clampi(value, 0, GraphicsProfile.Quality.HIGH)
+	GraphicsProfile.apply(_env, _sun, quality)
 
 
 func bind(p_city: City) -> void:

@@ -1,3 +1,25 @@
+## OPERAÇÃO CAOS — desenvolvimento Godot
+
+Esta base GTA-mini/Night Drop está sendo evoluída com mecânicas e identidade originais.
+A primeira etapa adiciona **salto com Espaço**, **RUN/JUMP no touch**, proteção da
+câmera contra paredes próximas e perfis gráficos **LOW/MEDIUM/HIGH com F6**.
+LOW é o padrão; os controles existentes de veículos, armas e missões continuam em uso.
+O salto ainda reutiliza a animação idle, sem clip dedicado.
+
+Auditoria e limites da referência: [matriz de funcionalidades](docs/REFERENCE_FEATURE_MATRIX.md).
+Próximas etapas: [roadmap](docs/IMPLEMENTATION_ROADMAP.md),
+[arquitetura](docs/ARCHITECTURE.md) e [resultados de testes](docs/TEST_RESULTS.md).
+
+Após importar o projeto no Godot 4.7, execute:
+
+```sh
+godot --headless --path . --script tests/test_stage_one.gd
+godot --headless --path . --script tests/test_game_integration.gd
+```
+
+O texto abaixo documenta a base upstream; anúncios de funcionalidades são
+conferidos na matriz e não equivalem a validação de todas as mecânicas.
+
 <p align="center">
   <img src="docs/media/play_city.png" alt="Night Drop — driving the amber coupe through the harbor grid at night" width="100%">
 </p>
