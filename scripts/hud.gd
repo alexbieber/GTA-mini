@@ -20,6 +20,14 @@ var _crime: Label
 var _weapon: Label
 var _speed: Label
 var radar: Radar
+var reticle: CombatReticle
+
+func set_combat(on: bool, ads: bool, speed: float) -> void:
+	reticle.visible = on
+	reticle.gap = 3.0 if ads else 8.0 + minf(speed, 10.0)
+
+func confirm_hit() -> void:
+	reticle.hit_remaining = 0.15
 
 
 func _ready() -> void:
@@ -110,6 +118,11 @@ func _build() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
+	reticle = CombatReticle.new()
+	reticle.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	reticle.visible = false
+	root.add_child(reticle)
 
 	_objective = _label(18, Color("f0e6c8"))
 	_objective.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -273,7 +286,7 @@ func _build() -> void:
 	col.add_child(_start)
 
 	var keys := _label(13, Color(0.78, 0.76, 0.68, 0.8))
-	keys.text = "WASD · Shift run · Space jump · E enter · click shoot · 1-3 guns · N day/night · F6 graphics"
+	keys.text = "WASD · Shift run · Ctrl crouch/slide · T tactical · RMB ADS · R reload · Q shoulder · F6 graphics"
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(keys)
 

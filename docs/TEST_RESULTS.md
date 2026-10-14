@@ -1,5 +1,13 @@
 # Resultados de testes — 14/10/2026
 
+## Incremento de combate (segunda execução)
+
+Novas verificações em tests/test_combat.gd cobrem munição/recarga/cancelamento, cadência, armadura/morte, crouch/teto, escala visual, slide/tactical sprint, tiros bloqueados por parede próxima ao personagem, ADS/sensibilidade/recoil e pool limitado. Integração agora verifica respawn após roubo sem liberar FREE antes da entrega. Resultado final: combat 40/40, stage_one 24/24 e game_integration 14/14; todos exit 0, sem erros de script. git diff --check passou. Testes de teclado/mouse usam eventos físicos correspondentes aos dispositivos do Godot 4.7.
+
+Executado também tests/capture_combat.gd com renderer gl_compatibility na Quadro 600: captura PNG em %TEMP%/caos-combat.png, retorno 0, inspecionada. Revelou escala vertical incorreta ao ficar em pé, corrigida; nova captura confirmou proporções preservadas e HUD ADS. Primeira execução encontrou WASAPI indisponível; segunda usou --audio-driver Dummy e iniciou sem erros de script. Não foi teste manual de combate nem validação de áudio.
+
+Referência YouTube não reproduzível pela ferramenta web. REA não encontrou endpoint CDP ativo em 127.0.0.1:9222; somente disponibilidade foi consultada. Não houve inspeção de gameplay da referência nesta execução. Multiplayer, cobertura, IA tática e benchmark continuam pendentes.
+
 ## Ambiente
 
 Windows, PowerShell, Godot `4.7.2.stable.official.ed1daf0bf` encontrado em `C:/Users/User/Downloads/Godot_v4.7.2-stable_win64_console.exe`. Os comandos abaixo usam `godot` como abreviação desse caminho. Testes headless com renderer dummy: nenhuma medição de FPS/GPU inferida desses resultados.

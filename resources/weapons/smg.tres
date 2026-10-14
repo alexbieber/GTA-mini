@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+label = "SMG"
+damage = 14.0
+effective_range = 55.0
+shot_interval = 0.09
+magazine_size = 30
+starting_ammo = 80
+reload_seconds = 1.9
+spread = 0.028
+automatic = true
+price = 600

@@ -124,7 +124,8 @@ func run() -> void:
 	GraphicsProfile.apply(environment, sun, GraphicsProfile.Quality.LOW)
 	check(not environment.sdfgi_enabled and not environment.ssr_enabled and not sun.shadow_enabled, "low preset disables expensive lighting")
 	GraphicsProfile.apply(environment, sun, GraphicsProfile.Quality.HIGH)
-	check(environment.sdfgi_enabled and environment.ssr_enabled and sun.shadow_enabled, "high preset restores lighting")
+	var advanced := RenderingServer.get_current_rendering_method() == "forward_plus"
+	check(environment.sdfgi_enabled == advanced and environment.ssr_enabled == advanced and sun.shadow_enabled, "high preset restores supported lighting")
 	sun.free()
 	touch.queue_free()
 	world.queue_free()

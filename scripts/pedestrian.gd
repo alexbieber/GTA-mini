@@ -13,6 +13,7 @@ var path_i := 0
 var mood: Mood = Mood.WALK
 var downed := false
 var is_officer := false
+var vitality := HealthComponent.new()
 
 var _down_t := 0.0
 var _wait_t := 0.0
@@ -57,6 +58,13 @@ func knock_down() -> void:
 	_down_t = 7.0 if not is_officer else 3.2
 	rotation.z = 1.15
 
+func take_damage(amount: float, region_multiplier := 1.0) -> void:
+	vitality.apply_damage(amount, region_multiplier)
+	if vitality.current <= 0.0:
+		knock_down()
+	else:
+		scare(global_position - global_transform.basis.z)
+
 
 func scare(from: Vector3) -> void:
 	if downed:
@@ -88,6 +96,7 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		Models.play_move(_anim, false)
 		if _down_t <= 0.0:
+			vitality.reset()
 			downed = false
 			mood = Mood.CHASE if is_officer else Mood.WALK
 			rotation.z = 0.0

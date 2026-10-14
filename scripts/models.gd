@@ -453,7 +453,7 @@ static func _paint_skin(root: Node, skin_path: String) -> void:
 	mat.roughness = 0.52
 	mat.metallic = 0.0
 	mat.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
-	mat.subsurf_scatter_enabled = true
+	mat.subsurf_scatter_enabled = RenderingServer.get_current_rendering_method() == "forward_plus"
 	mat.subsurf_scatter_strength = 0.18
 	mat.subsurf_scatter_skin_mode = true
 	for node in root.find_children("*", "MeshInstance3D", true, false):

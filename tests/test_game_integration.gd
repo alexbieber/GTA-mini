@@ -51,12 +51,17 @@ func run() -> void:
 	check(not game.player.in_vehicle and not game.camera.vehicle_mode, "existing car exit works")
 	game.clock.set_quality(GraphicsProfile.Quality.MEDIUM)
 	game.clock.toggle()
-	check(game.clock._env.ssao_enabled and not game.clock._env.sdfgi_enabled, "day/night preserves MEDIUM profile")
+	var advanced := RenderingServer.get_current_rendering_method() == "forward_plus"
+	check(game.clock._env.ssao_enabled == advanced and not game.clock._env.sdfgi_enabled, "day/night preserves supported MEDIUM profile")
 	game.player.give_weapon(Arsenal.Id.PISTOL, 3)
-	var ammo_before: int = game.player.ammo[Arsenal.Id.PISTOL]
+	var ammo_before: int = game.player.magazines[Arsenal.Id.PISTOL]
 	game.player.locked = false
 	var shot: Dictionary = game.player.spend_shot()
-	check(not shot.is_empty() and game.player.ammo[Arsenal.Id.PISTOL] == ammo_before - 1, "existing weapon spends ammunition")
+	check(not shot.is_empty() and game.player.magazines[Arsenal.Id.PISTOL] == ammo_before - 1, "weapon spends magazine ammunition")
+	game._set_down(game.Phase.WASTED, "WASTED")
+	game._respawn()
+	check(game.phase == game.Phase.DELIVER, "respawn after theft preserves unfinished delivery")
+	check(game.camera.follow == game.player and not game.camera.vehicle_mode, "respawn restores player camera")
 	var graphics := InputEventKey.new()
 	graphics.keycode = KEY_F6
 	graphics.pressed = true

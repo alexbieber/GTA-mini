@@ -11,6 +11,14 @@ var touch_sens := 0.0065
 var shake := 0.0
 var vehicle_mode := false
 var aircraft_mode := false
+var ads_sensitivity := 0.55
+var shoulder := 1.0
+var ads_blend := 0.0
+var combat_blend := 0.0
+var exploration_fov := 70.0
+var ads_fov := 48.0
+var recoil := Vector2.ZERO
+var recoil_strength := 1.0
 
 var _cam: Camera3D
 var _collision_sphere := SphereShape3D.new()
@@ -22,16 +30,17 @@ func _ready() -> void:
 	_cam.name = "Cam"
 	_cam.current = true
 	_cam.fov = 70.0
-	_cam.far = 2800.0
+	_cam.far = 900.0
 	_cam.near = 0.16
 	add_child(_cam)
 
 
 func add_look(delta: Vector2, from_touch := false) -> void:
 	var s := touch_sens if from_touch else mouse_sens
+	s *= lerpf(1.0, ads_sensitivity, ads_blend)
 	yaw -= delta.x * s
-	var lo := -0.92 if aircraft_mode else -0.58
-	var hi := 0.42 if aircraft_mode else 0.22
+	var lo := -0.92 if aircraft_mode else -1.15
+	var hi := 0.42 if aircraft_mode else 0.9
 	pitch = clampf(pitch - delta.y * s, lo, hi)
 
 
@@ -56,6 +65,13 @@ func camera() -> Camera3D:
 func _process(delta: float) -> void:
 	if follow == null:
 		return
+	var player := follow as Player
+	var aim := player != null and player.aiming and not player.locked and not player.in_vehicle
+	var combat := player != null and (aim or player.combat_remaining > 0.0) and not player.locked and not player.in_vehicle
+	var aim_time := Arsenal.data(player.weapon).aim_seconds if aim else 0.12
+	ads_blend = move_toward(ads_blend, 1.0 if aim else 0.0, delta / maxf(aim_time, 0.01))
+	combat_blend = move_toward(combat_blend, 1.0 if combat else 0.0, delta * 8.0)
+	recoil = recoil.lerp(Vector2.ZERO, 1.0 - exp(-8.0 * delta))
 	var spd := 0.0
 	if follow is Vehicle:
 		spd = absf((follow as Vehicle).speed)
@@ -66,27 +82,32 @@ func _process(delta: float) -> void:
 	elif vehicle_mode:
 		look_offset.y = 2.05 + spd * 0.01
 	else:
-		look_offset.y = 1.55
+		look_offset.y = 1.0 if player != null and player.crouched else 1.55
 	var target := follow.global_position + look_offset
 	if global_position.distance_to(target) > 24.0:
 		global_position = target
 	else:
-		global_position = global_position.lerp(target, 1.0 - exp(-10.0 * delta))
+		global_position = global_position.lerp(target, 1.0 - exp(-lerpf(10.0, 35.0, ads_blend) * delta))
 	if vehicle_mode:
 		yaw = lerp_angle(yaw, follow.rotation.y, 1.15 * delta)
-	rotation.y = yaw
+	rotation.y = yaw + recoil.x
 
 	var dist := arm_length + spd * 0.045
-	var elev := -pitch
+	if not vehicle_mode:
+		dist = lerpf(dist, lerpf(3.8, 2.6, ads_blend), combat_blend)
+	var elev := -pitch - recoil.y
 	var back := global_transform.basis.z
-	var desired := global_position + back * (dist * cos(elev)) + Vector3.UP * (dist * sin(elev)) + global_transform.basis.x * 0.38
+	var side := global_transform.basis.x * shoulder * lerpf(0.38, 0.65, combat_blend)
+	var desired := global_position + back * (dist * cos(elev)) + Vector3.UP * (dist * sin(elev)) + side
 	var from := global_position + Vector3(0, 0.2, 0)
 	desired = resolve_obstruction(from, desired)
 	_cam.global_position = desired
 	if _cam.global_position.distance_squared_to(global_position) > 0.04:
-		_cam.look_at(global_position)
-	var base_fov := 76.0 if aircraft_mode else (72.0 if vehicle_mode else 70.0)
-	_cam.fov = lerpf(_cam.fov, minf(base_fov + spd * 0.1, 84.0), 4.0 * delta)
+		var aim_target := global_position - back * cos(elev) * 50.0 - Vector3.UP * sin(elev) * 50.0
+		var target_blend := 1.0 if player != null and player.weapon != Arsenal.Id.NONE and not player.locked else combat_blend
+		_cam.look_at(global_position.lerp(aim_target, target_blend))
+	var base_fov := 76.0 if aircraft_mode else (72.0 if vehicle_mode else lerpf(exploration_fov, ads_fov, ads_blend))
+	_cam.fov = lerpf(_cam.fov, minf(base_fov + spd * 0.1, 84.0), 1.0 - exp(-12.0 * delta))
 	if shake > 0.0:
 		_cam.h_offset = randf_range(-shake, shake)
 		_cam.v_offset = randf_range(-shake, shake)
@@ -98,6 +119,10 @@ func _process(delta: float) -> void:
 
 func add_shake(amount: float) -> void:
 	shake = minf(shake + amount, 0.5)
+
+func kick(data: WeaponData) -> void:
+	recoil.y = minf(recoil.y + data.recoil_vertical * recoil_strength, 0.18)
+	recoil.x = clampf(recoil.x + randf_range(-data.recoil_horizontal, data.recoil_horizontal) * recoil_strength, -0.08, 0.08)
 
 
 func resolve_obstruction(from: Vector3, desired: Vector3) -> Vector3:

@@ -38,6 +38,7 @@ var window_mats: Array[StandardMaterial3D] = []
 var road_mats: Array[StandardMaterial3D] = []
 var neon_mats: Array[StandardMaterial3D] = []
 var water_mat: ShaderMaterial
+var quality := GraphicsProfile.Quality.LOW
 
 var _garage: Area3D
 var _spray: Area3D
@@ -70,6 +71,8 @@ func refresh_reflections() -> void:
 	for node in get_children():
 		if node is ReflectionProbe:
 			node.queue_free()
+	if quality == GraphicsProfile.Quality.LOW:
+		return
 	var probe := ReflectionProbe.new()
 	probe.position = Vector3(0, 48, 0)
 	probe.size = Vector3(720, 180, 800)

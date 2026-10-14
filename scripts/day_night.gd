@@ -33,19 +33,19 @@ func _ready() -> void:
 	_env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	_env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	_env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	_env.ssao_enabled = true
+	_env.ssao_enabled = false
 	_env.ssao_radius = 1.6
 	_env.ssao_intensity = 2.4
-	_env.ssil_enabled = true
+	_env.ssil_enabled = false
 	_env.ssil_intensity = 0.75
-	_env.ssr_enabled = true
+	_env.ssr_enabled = false
 	_env.ssr_max_steps = 64
 	_env.ssr_fade_in = 0.08
-	_env.sdfgi_enabled = true
+	_env.sdfgi_enabled = false
 	_env.sdfgi_use_occlusion = true
 	_env.sdfgi_cascades = 4
 	_env.sdfgi_min_cell_size = 0.35
-	_env.glow_enabled = true
+	_env.glow_enabled = false
 	_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	_env.adjustment_enabled = true
 	_env.fog_enabled = true
@@ -72,10 +72,14 @@ func _ready() -> void:
 func set_quality(value: int) -> void:
 	quality = clampi(value, 0, GraphicsProfile.Quality.HIGH)
 	GraphicsProfile.apply(_env, _sun, quality)
+	if city:
+		city.quality = quality
+		city.refresh_reflections()
 
 
 func bind(p_city: City) -> void:
 	city = p_city
+	city.quality = quality
 	apply(is_night)
 
 

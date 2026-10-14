@@ -11,6 +11,12 @@ var handbrake := false
 var driving := false
 var jump_pressed := false
 var sprint := false
+var firing := false
+var was_firing := false
+var aiming := false
+var reload_pressed := false
+var crouch_pressed := false
+var _combat_buttons: Array[Button] = []
 
 var _stick_id := -1
 var _look_id := -1
@@ -72,6 +78,13 @@ func _on_action_up() -> void:
 
 
 func set_driving(on: bool) -> void:
+	firing = false
+	was_firing = false
+	aiming = false
+	reload_pressed = false
+	crouch_pressed = false
+	for button in _combat_buttons:
+		button.visible = not on
 	driving = on
 	jump_pressed = false
 	sprint = false
@@ -142,6 +155,19 @@ func _build() -> void:
 	_sprint_btn.button_down.connect(func() -> void: sprint = true)
 	_sprint_btn.button_up.connect(func() -> void: sprint = false)
 	_root.add_child(_sprint_btn)
+	var fire_btn := _action_button("FIRE", Vector2(-168, -424))
+	fire_btn.button_down.connect(func() -> void: firing = true)
+	fire_btn.button_up.connect(func() -> void: firing = false)
+	var aim_btn := _action_button("ADS", Vector2(-300, -424))
+	aim_btn.button_down.connect(func() -> void: aiming = true)
+	aim_btn.button_up.connect(func() -> void: aiming = false)
+	var reload_btn := _action_button("RELOAD", Vector2(-432, -322))
+	reload_btn.pressed.connect(func() -> void: reload_pressed = true)
+	var crouch_btn := _action_button("CROUCH", Vector2(-432, -220))
+	crouch_btn.pressed.connect(func() -> void: crouch_pressed = true)
+	_combat_buttons.assign([fire_btn, aim_btn, reload_btn, crouch_btn])
+	for button in _combat_buttons:
+		_root.add_child(button)
 
 	_hint = Label.new()
 	_hint.text = "Left stick move · drag right to look"
