@@ -9,7 +9,7 @@ Importe o único `project.godot` desta pasta e pressione **F5**. A cena inicial 
 
 WASD, Shift, Espaço, Ctrl agachar/slide, T tactical sprint, RMB ADS, LMB tiro, R recarga, Q ombro, C cobertura, F corpo a corpo, E objetivo/loot/arsenal, G derrubar pacote, 1–3/roda armas, Tab/Esc menu, F6 qualidade. Cobertura baixa expõe o personagem ao mirar; paredes altas exigem deslocar-se até a borda.
 
-[Modos e arquitetura](docs/GAME_MODES.md) · [5v5](docs/PROTEGE_O_CORRE.md) · [Favela](docs/BATTLE_ROYALE.md) · [Locutor](docs/ANNOUNCER_SYSTEM.md) · [Testes](docs/GAME_MODES_TESTS.md) · [Desempenho](docs/PERFORMANCE.md).
+[Entrega e execução](docs/DELIVERY.md) · [Modos e arquitetura](docs/GAME_MODES.md) · [5v5](docs/PROTEGE_O_CORRE.md) · [Favela](docs/BATTLE_ROYALE.md) · [Locutor](docs/ANNOUNCER_SYSTEM.md) · [Testes](docs/GAME_MODES_TESTS.md) · [Desempenho](docs/PERFORMANCE.md).
 
 Após importar, testes automatizados:
 
