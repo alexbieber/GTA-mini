@@ -9,7 +9,9 @@ static func cast(world: World3D, camera_origin: Vector3, direction: Vector3, muz
 	var camera_hit := space.intersect_ray(query)
 	if camera_hit:
 		target = camera_hit.position
-	query = PhysicsRayQueryParameters3D.create(muzzle, muzzle + (target - muzzle).normalized() * minf(distance, muzzle.distance_to(target)), 1 | 4 | 8 | 16, excluded)
+	# Pass slightly into the camera-selected surface. Ending exactly on it can
+	# miss curved capsules when the muzzle ray arrives from a different angle.
+	query = PhysicsRayQueryParameters3D.create(muzzle, muzzle + (target - muzzle).normalized() * minf(distance, muzzle.distance_to(target) + 0.25), 1 | 4 | 8 | 16, excluded)
 	query.hit_from_inside = true
 	var hit := space.intersect_ray(query)
 	return {"hit": hit, "end": hit.position if hit else query.to, "origin": muzzle}

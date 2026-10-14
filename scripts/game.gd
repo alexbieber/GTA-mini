@@ -30,6 +30,7 @@ var beacon: MeshInstance3D
 var last_seen_mark: Marker3D
 var roads: RoadGraph
 var shot_effects: ShotEffects
+var matches: MatchManager
 
 
 func get_wanted() -> int:
@@ -37,6 +38,11 @@ func get_wanted() -> int:
 
 
 func radar_objective() -> Vector3:
+	if matches and matches.competitive():
+		if matches.zone:
+			return matches.zone.center
+		var carried := matches.rules.carried_by(0)
+		return matches.arena.bases[1] if carried else matches.arena.bases[0]
 	match phase:
 		Phase.STEAL:
 			return coupe.global_position if coupe else Vector3.ZERO
@@ -120,6 +126,15 @@ func _ready() -> void:
 	clock.apply(false)
 	hud.set_time_of_day(false)
 	_sync_hud()
+	matches = MatchManager.new()
+	matches.game = self
+	add_child(matches)
+	matches.announcer.subtitle_changed.connect(hud.set_subtitle)
+
+func start_mode(mode: int) -> void:
+	matches.start(mode)
+	if mode == MatchRules.Mode.FREE:
+		_sync_hud()
 
 
 func _make_cop(pos: Vector3, idx: int) -> Vehicle:
@@ -196,6 +211,12 @@ func begin() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if matches and phase != Phase.TITLE and event.is_action_pressed("return_menu"):
+		matches.return_menu()
+		return
+	if matches and matches.competitive():
+		if event.is_action_pressed("drop_objective"):
+			matches.rules.drop(0)
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F6:
 		clock.set_quality((clock.quality + 1) % 3)
 		hud.set_banner("GRAPHICS: " + GraphicsProfile.label(clock.quality))
@@ -272,6 +293,10 @@ func _process(delta: float) -> void:
 	if touch.firing and not touch.was_firing:
 		_try_fire()
 	touch.was_firing = touch.firing
+	if matches and matches.competitive():
+		if matches.rules.state == MatchRules.State.ACTIVE and (_firing or touch.firing) and player.weapon != Arsenal.Id.NONE and Arsenal.data(player.weapon).automatic:
+			_try_fire()
+		return
 
 	if phase in [Phase.BUSTED, Phase.WASTED]:
 		_end_timer += delta
@@ -297,6 +322,8 @@ func _process(delta: float) -> void:
 
 func _try_interact() -> void:
 	if player.locked:
+		return
+	if matches and matches.competitive() and matches.interact_player():
 		return
 	if active_aircraft:
 		_exit_aircraft()
@@ -512,7 +539,12 @@ func _try_fire() -> void:
 	if hit:
 		end = hit.position
 		var col = hit.collider
-		if col is Pedestrian:
+		if col is Player and matches and matches.competitive():
+			var height: float = hit.position.y - col.global_position.y
+			var multiplier := data.head_multiplier if height > 1.3 else (data.limb_multiplier if height < 0.6 else 1.0)
+			if matches.apply_hit(0, col, data.damage * multiplier):
+				hud.confirm_hit()
+		elif col is Pedestrian:
 			var ped := col as Pedestrian
 			var hit_height: float = hit.position.y - ped.global_position.y
 			var region := data.head_multiplier if hit_height > 1.3 else (data.limb_multiplier if hit_height < 0.6 else 1.0)
@@ -573,6 +605,8 @@ func _exit_vehicle() -> void:
 
 
 func _report(crime: String, pos: Vector3) -> void:
+	if matches and matches.competitive():
+		return
 	var added := heat.report(crime, _witnessed(pos))
 	if added > 0:
 		hud.set_crime(heat.label())

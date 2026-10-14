@@ -21,6 +21,40 @@ var _weapon: Label
 var _speed: Label
 var radar: Radar
 var reticle: CombatReticle
+var _mode_text: Label
+var _subtitle: Label
+var _feed: Label
+var _results: ColorRect
+var _result_title: Label
+var _result_subtitle: Label
+var _result_standings: Label
+var _feed_lines: Array[String] = []
+
+func set_mode_text(text: String) -> void:
+	_mode_text.text = text
+
+func set_subtitle(text: String) -> void:
+	_subtitle.text = text
+	if _result_subtitle:
+		_result_subtitle.text = text
+
+func add_elimination(text: String) -> void:
+	_feed_lines.append(text)
+	if _feed_lines.size() > 5:
+		_feed_lines.pop_front()
+	_feed.text = "\n".join(_feed_lines)
+
+func show_results(on: bool) -> void:
+	_results.visible = on
+	if not on:
+		_feed_lines.clear()
+		_feed.text = ""
+		set_banner("")
+
+func present_results(title: String, score: Array, mode: int, standings := "") -> void:
+	_result_title.text = title + ("\nPOLÍCIA %d × %d AURORA" % [score[0], score[1]] if mode == MatchRules.Mode.CORRE else "\nÚLTIMO SOBREVIVENTE")
+	_result_standings.text = standings
+	show_results(true)
 
 func set_combat(on: bool, ads: bool, speed: float) -> void:
 	reticle.visible = on
@@ -41,6 +75,8 @@ func _ready() -> void:
 
 func show_start(on: bool) -> void:
 	_start_panel.visible = on
+	if on and reticle:
+		reticle.visible = false
 	_time_chip.visible = not on
 	if radar:
 		radar.visible = not on
@@ -123,6 +159,29 @@ func _build() -> void:
 	reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	reticle.visible = false
 	root.add_child(reticle)
+	_mode_text = _label(16, Color("f0d060"))
+	_mode_text.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_mode_text.offset_left = -600
+	_mode_text.offset_right = 600
+	_mode_text.offset_top = -55
+	_mode_text.offset_bottom = -30
+	_mode_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(_mode_text)
+	_subtitle = _label(22, Color.WHITE)
+	_subtitle.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_subtitle.offset_left = -500
+	_subtitle.offset_right = 500
+	_subtitle.offset_top = -100
+	_subtitle.offset_bottom = -70
+	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(_subtitle)
+	_feed = _label(14, Color.WHITE)
+	_feed.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_feed.offset_left = -270
+	_feed.offset_right = -20
+	_feed.offset_top = 180
+	_feed.offset_bottom = 290
+	root.add_child(_feed)
 
 	_objective = _label(18, Color("f0e6c8"))
 	_objective.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -237,7 +296,7 @@ func _build() -> void:
 	var col := VBoxContainer.new()
 	col.set_anchors_preset(Control.PRESET_CENTER)
 	col.offset_left = -340
-	col.offset_top = -210
+	col.offset_top = -300
 	col.offset_right = 340
 	col.offset_bottom = 230
 	col.add_theme_constant_override("separation", 12)
@@ -248,13 +307,13 @@ func _build() -> void:
 	_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_tag)
 
-	_title = _label(64, Color("f0e6c8"))
+	_title = _label(48, Color("f0e6c8"))
 	_title.text = "OPERAÇÃO CAOS"
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_title)
 
 	_brief = _label(18, Color(0.88, 0.86, 0.78, 0.95))
-	_brief.text = "Steal the coupe. Lose the heat. Make the drop.\nThen the district stays open: gun shop, bar,\narmy base, An-2s, and traffic that looks like cars."
+	_brief.text = "Cidade aberta, combate e modos competitivos originais.\nEscolha uma partida offline ou explore o distrito."
 	_brief.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_brief)
 
@@ -270,7 +329,7 @@ func _build() -> void:
 	modes.add_child(_night_btn)
 
 	_start = Button.new()
-	_start.text = "START THE DROP"
+	_start.text = "CAOS LIVRE"
 	_start.custom_minimum_size = Vector2(0, 56)
 	_start.focus_mode = Control.FOCUS_NONE
 	var sb := StyleBoxFlat.new()
@@ -284,11 +343,58 @@ func _build() -> void:
 	_start.add_theme_font_size_override("font_size", 20)
 	_start.pressed.connect(_on_start)
 	col.add_child(_start)
+	for mode in [MatchRules.Mode.CORRE, MatchRules.Mode.BATTLE]:
+		var mode_button := _mode_button("PROTEGE O CORRE! · offline 4v4" if mode == MatchRules.Mode.CORRE else "ÚLTIMO SOBREVIVENTE · offline 12")
+		mode_button.pressed.connect(func() -> void: get_tree().current_scene.start_mode(mode))
+		col.add_child(mode_button)
+	var narrator := CheckButton.new()
+	narrator.text = "Locutor · voz e legendas"
+	narrator.button_pressed = true
+	narrator.toggled.connect(func(on: bool) -> void: get_tree().current_scene.matches.announcer.set_enabled(on))
+	col.add_child(narrator)
+	var volume := HSlider.new()
+	volume.min_value = -40
+	volume.max_value = 6
+	volume.value = -6
+	volume.tooltip_text = "Volume da narração quando houver voz original"
+	volume.value_changed.connect(func(value: float) -> void: get_tree().current_scene.matches.announcer.volume_db = value)
+	col.add_child(volume)
 
 	var keys := _label(13, Color(0.78, 0.76, 0.68, 0.8))
 	keys.text = "WASD · Shift run · Ctrl crouch/slide · T tactical · RMB ADS · R reload · Q shoulder · F6 graphics"
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(keys)
+	_build_results()
+
+func _build_results() -> void:
+	_results = ColorRect.new()
+	_results.color = Color(0.02, 0.04, 0.07, 0.92)
+	_results.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_results.visible = false
+	add_child(_results)
+	var column := VBoxContainer.new()
+	column.set_anchors_preset(Control.PRESET_CENTER)
+	column.offset_left = -320
+	column.offset_right = 320
+	column.offset_top = -300
+	column.offset_bottom = 150
+	column.add_theme_constant_override("separation", 24)
+	_results.add_child(column)
+	_result_title = _label(28, Color("f0d060"))
+	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_result_title)
+	_result_subtitle = _label(20, Color.WHITE)
+	_result_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_result_subtitle)
+	_result_standings = _label(14, Color.WHITE)
+	_result_standings.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_result_standings)
+	var restart := _mode_button("JOGAR NOVAMENTE")
+	restart.pressed.connect(func() -> void: get_tree().current_scene.matches.restart())
+	column.add_child(restart)
+	var menu := _mode_button("VOLTAR AO MENU")
+	menu.pressed.connect(func() -> void: get_tree().current_scene.matches.return_menu())
+	column.add_child(menu)
 
 
 func _mode_button(text: String) -> Button:
@@ -327,8 +433,8 @@ func _set_time(night: bool) -> void:
 
 func _on_start() -> void:
 	var game := get_tree().current_scene
-	if game and game.has_method("begin"):
-		game.begin()
+	if game and game.has_method("start_mode"):
+		game.start_mode(MatchRules.Mode.FREE)
 
 
 func _label(size: int, color: Color) -> Label:

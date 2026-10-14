@@ -5,7 +5,8 @@ static func install() -> void:
 	var keys := {"move_left": KEY_A, "move_right": KEY_D, "move_forward": KEY_W,
 		"move_back": KEY_S, "jump": KEY_SPACE, "sprint": KEY_SHIFT,
 		"crouch": KEY_CTRL, "reload": KEY_R, "swap_shoulder": KEY_Q,
-		"tactical_sprint": KEY_T, "interact": KEY_E}
+		"tactical_sprint": KEY_T, "interact": KEY_E,
+		"return_menu": KEY_TAB, "drop_objective": KEY_G}
 	for action in keys:
 		if InputMap.has_action(action):
 			continue
