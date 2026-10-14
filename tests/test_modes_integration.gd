@@ -109,6 +109,10 @@ func run() -> void:
 	check(manager.arena.definition.dimensions == Vector2(220, 220) and manager.arena.definition.favela, "Favela Royale selects its own 220x220 map")
 	check(manager.actors.size() == 10 and get_nodes_in_group("match_bots").size() == 9, "battle spawns ten participants")
 	check(manager.zone != null and manager._loot.size() == 24 and game.player.weapon == Arsenal.Id.NONE, "battle creates zone loot and unarmed start")
+	var loot_walkable := true
+	for supply in manager._loot:
+		if manager.arena.navigation.is_point_solid(manager.arena.cell(supply.position)) or supply.position.y < manager.arena.height_at(supply.position): loot_walkable = false
+	check(loot_walkable, "all loot lies on navigable cells at actual terrain height")
 	manager.rules.tick(3.0)
 	var loot: Dictionary = manager._loot[0]
 	game.player.global_position = loot.position

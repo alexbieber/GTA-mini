@@ -150,6 +150,7 @@ func run() -> void:
 	check(not announcer._speaker.playing and announcer.active_remaining > 0.0, "Police keeps subtitle timing without invented audio")
 	voice = null
 	announcer.queue_free()
-	await process_frame
+	# Give the audio mixing thread a block to release stopped OGG playback.
+	await create_timer(0.12).timeout
 	print("MATCH_RULES: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

@@ -12,6 +12,8 @@ var decision_remaining := 0.0
 var attack_remaining := 0.0
 var last_attacker := -1
 var bot_state := "WAIT"
+var last_seen := Vector3.ZERO
+var memory_until := 0.0
 
 func _ready() -> void:
 	super._ready()

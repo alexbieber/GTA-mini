@@ -20,6 +20,7 @@ var _result_standings: Label
 var _waiting_action := ""
 var _binding_button: Button
 var reticle: CombatReticle
+var _banner_remaining := 0.0
 var radar: Radar
 
 func _ready() -> void:
@@ -257,7 +258,9 @@ func present_results(title: String, score: Array, mode: int, standings := "") ->
 func set_mode_text(text: String) -> void: _mode.text = text
 func set_objective(text: String) -> void: _objective.text = text
 func set_prompt(text: String) -> void: _prompt.text = text
-func set_banner(text: String) -> void: _banner.text = text
+func set_banner(text: String) -> void:
+	_banner.text = text
+	_banner_remaining = 2.0 if text != "" else 0.0
 func set_subtitle(text: String) -> void:
 	_subtitle.text = text
 	_result_subtitle.text = text
@@ -274,3 +277,8 @@ func add_elimination(text: String) -> void:
 	_feed_lines.append(text)
 	if _feed_lines.size() > 5: _feed_lines.pop_front()
 	_feed.text = "\n".join(_feed_lines)
+
+func _process(delta: float) -> void:
+	if _banner_remaining > 0.0:
+		_banner_remaining = maxf(_banner_remaining - delta, 0.0)
+		if _banner_remaining == 0.0: _banner.text = ""

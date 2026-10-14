@@ -2,7 +2,7 @@ class_name MatchArena
 extends Node3D
 ## Both maps use shared modular geometry; collision footprints also drive A*.
 const ORIGIN := Vector3.ZERO
-var definition: ArenaDefinition
+@export var definition: ArenaDefinition
 var navigation := AStarGrid2D.new()
 var obstacles: Array[Rect2] = []
 var bases: Dictionary = {}
@@ -116,6 +116,8 @@ func _house(center: Vector2, dimensions: Vector2, height: float, color: Color, s
 	tank.top_radius = 0.8
 	tank.bottom_radius = 0.8
 	tank.height = 1.2
+	tank.radial_segments = 12
+	tank.rings = 1
 	_instance("tank", tank, Transform3D(Basis.IDENTITY, Vector3(center.x - 2, floor_y + height + 0.85, center.y)), Color("376787"))
 	if stairs:
 		var steps := ceili((height + 0.24) / 0.18)

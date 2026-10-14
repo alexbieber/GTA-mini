@@ -1,0 +1,11 @@
+# Favela Royale — 10 participantes offline
+
+Selecionar equipe/personagem para banco de voz e iniciar Favela Royale no menu. Todos os dez participantes competem individualmente; equipe escolhida não cria aliados neste modo. Um jogador + nove bots, spawn sem arma, 24 pontos de loot (armas, munições, proteção e cura). resources/loot_default.tres configura quantidade, distribuição por lista ponderada, armas e quantidades. E coleta; itens cheios de saúde/armadura não são desperdiçados. Posições são ajustadas a células navegáveis e altura do piso; não há loot dentro de construções fechadas.
+
+Mapa próprio de 220 × 220 m, resources/maps/favela_royale.tres. Casas modulares de alvenaria colorida, vielas, praça, mercadinho/bar fictícios, muros/caixas para cobertura, lajes com escadas em casas selecionadas, caixas d'água, postes e fios. Um bairro elevado a 1,6 m conecta ao térreo por rampa contínua. Player/Bot podem transpor degraus até 0,26 m. Casas fechadas não são interiores jogáveis; portas são apresentação. Bots usam grafo de piso com obstáculos compartilhados e conexão de rampa; não buscam lajes/escadas de edifícios.
+
+Zona: cinco fases editáveis em resources/safe_zone_default.tres, raio inicial 104 m; esperas 60/40/30/20/10 s, fechamentos 45/40/35/30/25 s, raios 70/45/25/10/2% do inicial. Centro novo fica contido no círculo anterior e passa validação de área livre central, garantindo final acessível. Circunferência no mundo/minimapa, aviso, tempo e dano em quanta de 1 s. Após fase final, dano continua fora dela. Bots priorizam segurança; perseguição usa LOS e memória de 5 s, seguida de patrulha na zona, sem consultar posição invisível do adversário.
+
+Eliminação é permanente; sem respawn no Battle Royale. Último vivo vence; mortes simultâneas resolvidas em lote e zero sobreviventes resulta em empate. Resultados, feed e restart/menu compartilhados com Protege o Corre. A arena é separada e liberada ao retornar; cidade aberta não é carregada.
+
+Limites: offline, um jogador humano; sem lobby de rede, drop aéreo, veículos, escopeta/sniper, inventário de loot visual completo ou IA de interiores. Cenário modular estilizado, animações de armas ainda placeholders. É uma versão testável, não qualidade AAA certificada.

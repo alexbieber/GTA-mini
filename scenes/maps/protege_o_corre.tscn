@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/modes/match_arena.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/maps/protege_o_corre.tres" id="2"]
+
+[node name="ProtegeOCorre" type="Node3D"]
+script = ExtResource("1")
+definition = ExtResource("2")

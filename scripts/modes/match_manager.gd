@@ -119,8 +119,7 @@ func start(selected: int) -> void:
 			_ambient.append({"node": node, "process_mode": node.process_mode, "visible": node.visible})
 			node.process_mode = Node.PROCESS_MODE_DISABLED
 			node.visible = false
-	arena = MatchArena.new()
-	arena.definition = load("res://resources/maps/%s.tres" % ("favela_royale" if selected == MatchRules.Mode.BATTLE else "protege_o_corre")) as ArenaDefinition
+	arena = load("res://scenes/maps/%s.tscn" % ("favela_royale" if selected == MatchRules.Mode.BATTLE else "protege_o_corre")).instantiate() as MatchArena
 	add_child(arena)
 	actors[0] = game.player
 	var count := rules.config.team_size * 2 if selected == MatchRules.Mode.CORRE else rules.config.battle_participants
@@ -334,7 +333,7 @@ func decide_bot(bot: MatchBot) -> void:
 		bot.bot_state = "ZONE"
 		bot.move_to(zone.center)
 		return
-	if zone and bot.weapon == Arsenal.Id.NONE:
+	if zone and (bot.weapon == Arsenal.Id.NONE or (int(bot.magazines.get(bot.weapon, 0)) <= 0 and int(bot.ammo.get(bot.weapon, 0)) <= 0)):
 		bot.bot_state = "LOOT"
 		bot.move_to(_nearest_loot(bot.global_position, true))
 		_collect_loot(id)
@@ -355,6 +354,8 @@ func decide_bot(bot: MatchBot) -> void:
 			nearest = distance
 			enemy = other
 	if enemy >= 0:
+		bot.last_seen = actors[enemy].global_position
+		bot.memory_until = rules.elapsed + 5.0
 		bot.bot_state = "ATTACK"
 		if nearest > 16.0:
 			bot.move_to(actors[enemy].global_position)
@@ -364,14 +365,12 @@ func decide_bot(bot: MatchBot) -> void:
 		return
 	if zone:
 		bot.bot_state = "HUNT"
-		var living := rules.alive_ids()
-		var nearest_enemy := -1
-		var distance := INF
-		for other in living:
-			if other != id and bot.global_position.distance_to(actors[other].global_position) < distance:
-				distance = bot.global_position.distance_to(actors[other].global_position)
-				nearest_enemy = other
-		bot.move_to(actors[nearest_enemy].global_position if nearest_enemy >= 0 else zone.center)
+		if bot.memory_until > rules.elapsed:
+			bot.move_to(bot.last_seen)
+		elif bot.route_index >= bot.route.size() or bot.global_position.distance_to(bot.target_position) < 2.0:
+			var angle := randf_range(0, TAU)
+			var destination := arena.nearest_clear(zone.center + Vector3(cos(angle), 0, sin(angle)) * randf_range(0.0, zone.radius * 0.65))
+			bot.move_to(destination if zone.contains(destination) else zone.center)
 		_collect_loot(id)
 		return
 	var carried := rules.carried_by(id)
@@ -441,9 +440,7 @@ func _spawn_loot() -> void:
 	for i in loot_config.count:
 		var angle := TAU * float(i) / maxi(loot_config.count, 1)
 		var radius := 45.0 if i % 2 == 0 else 65.0
-		var at := MatchArena.ORIGIN + Vector3(cos(angle) * radius, 0.2, sin(angle) * radius)
-		if not arena.valid_zone_center(at) and arena.navigation.is_point_solid(arena.cell(at)):
-			at = MatchArena.ORIGIN + Vector3((i % 6) * 4 - 12, 0.2, 0)
+		var at := arena.nearest_clear(Vector3(cos(angle) * radius, 0.2, sin(angle) * radius))
 		var view := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
 		mesh.size = Vector3(0.5, 0.4, 0.5)

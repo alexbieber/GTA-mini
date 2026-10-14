@@ -7,6 +7,7 @@ var world_span := 360.0
 func _ready() -> void:
 	custom_minimum_size = Vector2(148, 148)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip_contents = true
 
 
 func _draw() -> void:
