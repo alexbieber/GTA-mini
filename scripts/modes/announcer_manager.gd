@@ -38,6 +38,7 @@ func reset() -> void:
 	active_remaining = 0.0
 	if _speaker:
 		_speaker.stop()
+		_speaker.stream = null
 	subtitle_changed.emit("")
 
 func set_enabled(on: bool) -> void:

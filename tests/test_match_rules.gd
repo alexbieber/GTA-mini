@@ -148,6 +148,7 @@ func run() -> void:
 	announcer.request("FIRST_BLOOD")
 	announcer._process(0.01)
 	check(not announcer._speaker.playing and announcer.active_remaining > 0.0, "Police keeps subtitle timing without invented audio")
+	voice = null
 	announcer.queue_free()
 	await process_frame
 	print("MATCH_RULES: %d checks, %d failures" % [checks, failures])
