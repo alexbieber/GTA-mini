@@ -35,8 +35,7 @@ namespace NightDrop.UI
             title.alignment = TextAnchor.MiddleCenter;
             title.fontSize = 72;
             title.color = Color.white;
-            title.font = Resources.GetBuiltinResource<Font>("Arial.ttf")
-                         ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            title.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             var subGo = new GameObject("Tag", typeof(RectTransform), typeof(Text));
             subGo.transform.SetParent(canvasGo.transform, false);
@@ -79,8 +78,7 @@ namespace NightDrop.UI
             text.alignment = TextAnchor.MiddleCenter;
             text.fontSize = 36;
             text.color = Color.white;
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf")
-                        ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
     }
 }

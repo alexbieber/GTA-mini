@@ -34,8 +34,7 @@ namespace NightDrop.UI
             text.alignment = TextAnchor.MiddleCenter;
             text.fontSize = 36;
             text.color = Color.white;
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf")
-                        ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
     }
 }
