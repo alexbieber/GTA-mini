@@ -22,6 +22,10 @@ var display_name := "Car"
 var speed := 0.0
 var max_speed := 22.0
 var ai_max_speed := 17.5
+var accel := 120.0
+var brake_rate := 48.0
+var coast := 8.0
+var turn_rate := 1.9
 var hp := 100.0
 var last_impact := 0.0
 var graph: RoadGraph
@@ -54,26 +58,30 @@ func setup(p_kind: Kind, spawn: Vector3, facing_y := 0.0) -> void:
 		rotation.y = facing_y
 
 
-func _apply_kind() -> void:
-	match kind:
+static func profile(p_kind: Kind) -> Dictionary:
+	match p_kind:
 		Kind.COUPE:
-			max_speed = 112.0
+			return {"max_speed": 112.0, "ai_max_speed": 17.5, "accel": 188.0, "brake": 74.0, "coast": 6.5, "turn": 2.25, "ai": false, "driver": true}
 		Kind.COP:
-			max_speed = 78.0
-			ai_max_speed = 68.0
-			ai_enabled = true
+			return {"max_speed": 78.0, "ai_max_speed": 68.0, "accel": 150.0, "brake": 108.0, "coast": 11.0, "turn": 1.82, "ai": true, "driver": true}
 		Kind.PARKED:
-			max_speed = 64.0
-			has_driver = false
-			ai_enabled = false
+			return {"max_speed": 64.0, "ai_max_speed": 17.5, "accel": 112.0, "brake": 60.0, "coast": 8.0, "turn": 1.68, "ai": false, "driver": false}
 		Kind.CIVILIAN:
-			max_speed = 56.0
-			ai_max_speed = 36.0
-			ai_enabled = true
-		Kind.MILITARY:
-			max_speed = 68.0
-			has_driver = false
-			ai_enabled = false
+			return {"max_speed": 56.0, "ai_max_speed": 36.0, "accel": 84.0, "brake": 46.0, "coast": 7.0, "turn": 1.5, "ai": true, "driver": true}
+		_:
+			return {"max_speed": 46.0, "ai_max_speed": 17.5, "accel": 48.0, "brake": 32.0, "coast": 4.0, "turn": 1.08, "ai": false, "driver": false}
+
+
+func _apply_kind() -> void:
+	var spec := profile(kind)
+	max_speed = spec["max_speed"]
+	ai_max_speed = spec["ai_max_speed"]
+	accel = spec["accel"]
+	brake_rate = spec["brake"]
+	coast = spec["coast"]
+	turn_rate = spec["turn"]
+	ai_enabled = spec["ai"]
+	has_driver = spec["driver"]
 
 
 func _ready() -> void:
@@ -227,15 +235,15 @@ func _physics_process(delta: float) -> void:
 			handbrake = true
 	braking = throttle < -0.05 or handbrake
 	if throttle > 0.05 and not handbrake:
-		var accel := 158.0 - absf(speed) * 0.16
-		speed = move_toward(speed, cap * throttle, maxf(accel, 52.0) * delta)
+		var push := accel - absf(speed) * 0.16
+		speed = move_toward(speed, cap * throttle, maxf(push, accel * 0.32) * delta)
 	elif throttle < -0.05:
-		speed = move_toward(speed, -cap * 0.38, 48.0 * delta)
+		speed = move_toward(speed, -cap * 0.38, brake_rate * delta)
 	else:
-		speed = move_toward(speed, 0.0, (52.0 if handbrake else 8.0) * delta)
+		speed = move_toward(speed, 0.0, (brake_rate * 1.35 if handbrake else coast) * delta)
 
 	var speed_turn := clampf(1.55 - absf(speed) / 100.0, 0.4, 1.3)
-	var turn := (2.85 if handbrake else 1.9) * speed_turn
+	var turn := (turn_rate * 1.5 if handbrake else turn_rate) * speed_turn
 	if abs(speed) > 0.35:
 		rotate_y(-steer * turn * signf(speed) * delta)
 

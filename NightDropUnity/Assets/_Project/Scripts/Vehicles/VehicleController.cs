@@ -30,6 +30,7 @@ namespace NightDrop.Vehicles
         float _aiCap;
         Transform _chase;
         float _ramCool;
+        float _gunCool;
 
         public Transform LookAt { get; set; }
         public bool PlayerDriven { get; private set; }
@@ -159,6 +160,7 @@ namespace NightDrop.Vehicles
             }
 
             SyncVisuals();
+            TryShootPlayer();
         }
 
         void AiDrive(out float throttle, out float steerInput, out float brake)
@@ -185,9 +187,21 @@ namespace NightDrop.Vehicles
 
         void OnCollisionEnter(Collision collision)
         {
-            if (!PlayerDriven || Time.time < _ramCool)
+            if (Time.time < _ramCool || _rb == null || _rb.velocity.magnitude < 5.5f)
                 return;
-            if (_rb.velocity.magnitude < 5.5f)
+
+            if (!PlayerDriven && IsPolice)
+            {
+                var struck = collision.collider.GetComponentInParent<PlayerController>();
+                if (struck != null && !struck.InVehicle)
+                {
+                    struck.Health?.Apply(28f);
+                    _ramCool = Time.time + 0.7f;
+                    return;
+                }
+            }
+
+            if (!PlayerDriven)
                 return;
 
             var ped = collision.collider.GetComponentInParent<NightDrop.AI.Pedestrian>();
@@ -202,8 +216,51 @@ namespace NightDrop.Vehicles
             if (other != null && other != this)
             {
                 HeatSystem.Report(other.IsPolice ? 22f : 7f);
+                if (PlayerDriven && other.IsPolice)
+                    PlayerController.Instance?.Health?.Apply(12f);
                 _ramCool = Time.time + 0.6f;
             }
+        }
+
+        void TryShootPlayer()
+        {
+            if (!IsPolice || PlayerDriven || Time.time < _gunCool)
+                return;
+            if (HeatSystem.Instance == null || HeatSystem.Instance.Level <= 0)
+                return;
+
+            var player = PlayerController.Instance;
+            if (player == null || !player.isActiveAndEnabled || player.InVehicle || player.Health == null || player.Health.Dead)
+                return;
+
+            Vector3 origin = transform.position + Vector3.up * 1.2f;
+            Vector3 target = player.transform.position + Vector3.up * 1.1f;
+            Vector3 to = target - origin;
+            if (to.sqrMagnitude > 26f * 26f)
+                return;
+
+            if (!NightDrop.Combat.PlayerCombat.FirstHit(origin, to.normalized, 26f, null, this, out RaycastHit hit))
+                return;
+            if (hit.collider.GetComponentInParent<PlayerController>() != player)
+                return;
+            target = hit.point;
+
+            _gunCool = Time.time + 0.7f;
+            player.Health.Apply(16f);
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = "PatrolShot";
+            var col = go.GetComponent<Collider>();
+            if (col != null)
+                Destroy(col);
+            go.transform.position = (origin + target) * 0.5f;
+            Vector3 span = target - origin;
+            if (span.sqrMagnitude > 0.0001f)
+                go.transform.rotation = Quaternion.LookRotation(span);
+            go.transform.localScale = new Vector3(0.03f, 0.03f, Mathf.Max(0.2f, span.magnitude));
+            var renderer = go.GetComponent<Renderer>();
+            if (renderer != null)
+                renderer.material.color = new Color(1f, 0.35f, 0.25f);
+            Destroy(go, 0.05f);
         }
 
         void SyncVisuals()

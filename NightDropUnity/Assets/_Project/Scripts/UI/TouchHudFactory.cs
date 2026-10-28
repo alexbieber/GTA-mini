@@ -24,6 +24,7 @@ namespace NightDrop.UI
             BuildLookPad(canvas.transform);
             BuildButton(canvas.transform, "Jump", new Vector2(-220, 160), TouchHoldButton.ActionKind.Jump);
             BuildButton(canvas.transform, "Fire", new Vector2(-90, 280), TouchHoldButton.ActionKind.Fire);
+            BuildButton(canvas.transform, "Punch", new Vector2(-250, 300), TouchHoldButton.ActionKind.Punch);
             BuildButton(canvas.transform, "Use", new Vector2(-90, 120), TouchHoldButton.ActionKind.Interact);
             BuildButton(canvas.transform, "Run", new Vector2(-350, 160), TouchHoldButton.ActionKind.Sprint);
             return canvas;

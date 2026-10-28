@@ -1,3 +1,4 @@
+using NightDrop.Combat;
 using NightDrop.Managers;
 using NightDrop.Player;
 using NightDrop.UI;
@@ -42,6 +43,7 @@ namespace NightDrop.Managers
 
             _hud = TouchHudFactory.Build(transform);
             HeatHud.Bind(_hud.transform);
+            CombatHud.Bind(_hud.transform);
             _hud.enabled = false;
 
             if (GetComponent<HeatSystem>() == null)

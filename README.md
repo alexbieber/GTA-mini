@@ -165,12 +165,12 @@ Then the city keeps running: traffic on a road graph, pedestrians on sidewalk lo
 - [x] Phase 1 — walk / run / jump / swim + camera
 - [x] Phase 2 — WheelCollider cars, enter/exit, traffic
 - [x] Phase 3 — pedestrians, heat, chasing patrols
-- [ ] Phase 4 — melee, guns, health
+- [x] Phase 4 — melee, guns, health
 - [ ] Phase 5 — missions
 - [ ] Phase 6 — UI
 - [ ] Phase 7 — polish
 
-Audio is the loudest hole. There is **no soundtrack and no SFX yet**. If you are an audio person, this repo will make you a hero in one PR.
+Harbor SFX are in: footsteps, a speed-pitched engine loop, and a short radio stinger when heat ranks up. There is still no soundtrack.
 
 ---
 

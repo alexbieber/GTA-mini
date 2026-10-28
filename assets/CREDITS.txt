@@ -14,3 +14,6 @@ Aircraft
 
 Environment
 - Poly Haven PBR + HDRIs — polyhaven.com — CC0
+
+Audio
+- Footsteps, engine loop, and heat radio stinger — original synthesis in scripts/city_audio.gd — original, not taken from any game soundtrack

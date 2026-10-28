@@ -19,8 +19,11 @@ The Godot prototype at the repo root stays as-is. This folder is the Unity proje
 - Run: Run / Shift
 - Jump / handbrake: Jump / Space
 - Enter or exit a car: **Use** / E
+- Punch: **Punch** / F
+- Shoot: **Fire** / left mouse
+- After you go down: **Retry** / R
 
-Hit a pedestrian (on foot sprint or with a car) to raise **heat** (pips at the top). Patrol units spawn and chase. Hide long enough and heat drops.
+Hit a pedestrian (on foot sprint, a punch, a shot, or with a car) to raise **heat** (pips at the top). Patrol units spawn, chase, and fire while you are on foot. Hide long enough and heat drops. HP is at the top left. At 0 you drop and can retry.
 
 ## Built so far
 
@@ -28,7 +31,8 @@ Hit a pedestrian (on foot sprint or with a car) to raise **heat** (pips at the t
 - Phase 1 — walk / run / jump / swim + Cinemachine
 - Phase 2 — WheelCollider cars, enter/exit, traffic
 - Phase 3 — pedestrians, heat, chasing patrol units
+- Phase 4 — melee, pistol, health, death and retry
 
-## Next (Phase 4)
+## Next (Phase 5)
 
-Melee, guns, health. Ask for that as its own session.
+Missions. Ask for that as its own session.

@@ -10,7 +10,8 @@ namespace NightDrop.UI
             Jump,
             Interact,
             Fire,
-            Sprint
+            Sprint,
+            Punch
         }
 
         [SerializeField] ActionKind action;
@@ -34,6 +35,9 @@ namespace NightDrop.UI
                     break;
                 case ActionKind.Fire:
                     input.SetFire(true);
+                    break;
+                case ActionKind.Punch:
+                    input.PressPunch();
                     break;
                 case ActionKind.Sprint:
                     input.SetSprint(true);

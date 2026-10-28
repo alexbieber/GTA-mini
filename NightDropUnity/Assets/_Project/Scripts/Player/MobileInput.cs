@@ -23,6 +23,7 @@ namespace NightDrop.Player
         InputAction _kbInteract;
         InputAction _kbFire;
         InputAction _kbSprint;
+        InputAction _kbPunch;
 
         Vector2 _hudMove;
         Vector2 _hudLookDelta;
@@ -31,6 +32,7 @@ namespace NightDrop.Player
         bool _hudInteract;
         bool _hudFire;
         bool _hudSprint;
+        bool _hudPunch;
 
         public Vector2 Move { get; private set; }
         public Vector2 LookDelta { get; private set; }
@@ -39,6 +41,7 @@ namespace NightDrop.Player
         public bool InteractPressed { get; private set; }
         public bool FireHeld { get; private set; }
         public bool SprintHeld { get; private set; }
+        public bool PunchPressed { get; private set; }
 
         void Awake()
         {
@@ -61,6 +64,7 @@ namespace NightDrop.Player
             _kbInteract?.Enable();
             _kbFire?.Enable();
             _kbSprint?.Enable();
+            _kbPunch?.Enable();
         }
 
         void OnDisable()
@@ -70,6 +74,7 @@ namespace NightDrop.Player
             _kbInteract?.Disable();
             _kbFire?.Disable();
             _kbSprint?.Disable();
+            _kbPunch?.Disable();
         }
 
         void OnDestroy()
@@ -81,6 +86,7 @@ namespace NightDrop.Player
             _kbInteract?.Dispose();
             _kbFire?.Dispose();
             _kbSprint?.Dispose();
+            _kbPunch?.Dispose();
         }
 
         void Update()
@@ -92,6 +98,7 @@ namespace NightDrop.Player
             bool interact = _hudInteract;
             bool fire = _hudFire;
             bool sprint = _hudSprint;
+            bool punch = _hudPunch;
 
 #if UNITY_EDITOR || UNITY_STANDALONE
             if (_kbMove != null)
@@ -109,6 +116,7 @@ namespace NightDrop.Player
             interact |= WasPressed(_kbInteract);
             fire |= _kbFire != null && _kbFire.IsPressed();
             sprint |= _kbSprint != null && _kbSprint.IsPressed();
+            punch |= WasPressed(_kbPunch);
 #endif
 
             Move = Vector2.ClampMagnitude(move, 1f);
@@ -118,10 +126,12 @@ namespace NightDrop.Player
             InteractPressed = interact;
             FireHeld = fire;
             SprintHeld = sprint;
+            PunchPressed = punch;
 
             _hudLookDelta = Vector2.zero;
             _hudJump = false;
             _hudInteract = false;
+            _hudPunch = false;
         }
 
         public void SetHudMove(Vector2 value) => _hudMove = value;
@@ -135,6 +145,8 @@ namespace NightDrop.Player
         public void PressInteract() => _hudInteract = true;
 
         public void SetFire(bool held) => _hudFire = held;
+
+        public void PressPunch() => _hudPunch = true;
 
         public void SetSprint(bool held) => _hudSprint = held;
 
@@ -161,6 +173,7 @@ namespace NightDrop.Player
             _kbInteract = new InputAction("Interact", InputActionType.Button, "<Keyboard>/e");
             _kbFire = new InputAction("Fire", InputActionType.Button, "<Mouse>/leftButton");
             _kbSprint = new InputAction("Sprint", InputActionType.Button, "<Keyboard>/leftShift");
+            _kbPunch = new InputAction("Punch", InputActionType.Button, "<Keyboard>/f");
         }
 
         public static IReadOnlyList<Touch> ActiveTouches => Touch.activeTouches;

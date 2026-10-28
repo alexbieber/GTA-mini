@@ -49,7 +49,7 @@ Physics layers (don't reshuffle without a migration note): 1 world, 2 player, 3 
 - Play `Assets/_Project/Scenes/Bootstrap.unity`.
 - Scripts live under `NightDropUnity/Assets/_Project/`.
 - Mobile-first: on-screen touch is the real input. Keyboard is editor fallback.
-- Current unfinished phase: combat (Phase 4) → missions → UI → polish.
+- Current unfinished phase: missions (Phase 5) → UI → polish. Combat (Phase 4) is in.
 
 ## How to send a change
 

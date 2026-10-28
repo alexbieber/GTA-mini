@@ -22,6 +22,7 @@ namespace NightDrop.AI
         Vector3 _goal;
         float _wait;
         float _down;
+        float _health = 100f;
         Mood _mood = Mood.Wander;
 
         public bool Downed => _mood == Mood.Down;
@@ -30,13 +31,26 @@ namespace NightDrop.AI
         {
             if (_mood == Mood.Down)
                 return;
-            _mood = Mood.Down;
-            _down = 6f;
-            if (_cc != null)
-                _cc.enabled = false;
-            transform.rotation = Quaternion.LookRotation(transform.right, Vector3.up);
+            _health = 0f;
+            Drop();
             HeatSystem.Report(16f);
             ScareNearby(from);
+        }
+
+        public void Hurt(float amount, Vector3 from, float heat)
+        {
+            if (_mood == Mood.Down || amount <= 0f)
+                return;
+            _health = Mathf.Max(0f, _health - amount);
+            if (heat > 0f)
+                HeatSystem.Report(heat);
+            if (_health <= 0f)
+            {
+                Drop();
+                ScareNearby(from);
+            }
+            else
+                Scare(from);
         }
 
         public void Scare(Vector3 from)
@@ -72,6 +86,7 @@ namespace NightDrop.AI
                 _down -= Time.deltaTime;
                 if (_down <= 0f)
                 {
+                    _health = 100f;
                     transform.rotation = Quaternion.identity;
                     _mood = Mood.Wander;
                     if (_cc != null)
@@ -127,6 +142,15 @@ namespace NightDrop.AI
 
             if (dir.sqrMagnitude > 0.05f)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 8f * Time.deltaTime);
+        }
+
+        void Drop()
+        {
+            _mood = Mood.Down;
+            _down = 6f;
+            if (_cc != null)
+                _cc.enabled = false;
+            transform.rotation = Quaternion.LookRotation(transform.right, Vector3.up);
         }
 
         void PickGoal()

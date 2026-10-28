@@ -31,6 +31,7 @@ var last_seen_mark: Marker3D
 var roads: RoadGraph
 var shot_effects: ShotEffects
 var matches: MatchManager
+var sfx: CityAudio
 
 
 func get_wanted() -> int:
@@ -122,6 +123,8 @@ func _ready() -> void:
 	_spawn_peds()
 	_spawn_pickups()
 	_spawn_base_units()
+	sfx = CityAudio.new()
+	add_child(sfx)
 	_make_beacon()
 	clock.apply(false)
 	hud.set_time_of_day(false)
@@ -296,10 +299,14 @@ func _process(delta: float) -> void:
 	if matches and matches.competitive():
 		if matches.rules.state == MatchRules.State.ACTIVE and (_firing or touch.firing) and player.weapon != Arsenal.Id.NONE and Arsenal.data(player.weapon).automatic:
 			_try_fire()
+		if sfx:
+			sfx.tick(delta, null, null, 0)
 		return
 
 	if phase in [Phase.BUSTED, Phase.WASTED]:
 		_end_timer += delta
+		if sfx:
+			sfx.tick(delta, null, null, 0)
 		return
 	if phase == Phase.TITLE:
 		return
@@ -855,6 +862,8 @@ func collect_pickup(kind: int, amount: int) -> void:
 
 
 func _sync_hud() -> void:
+	if sfx and heat:
+		sfx.tick(get_process_delta_time(), player, active_vehicle, heat.just_ranked)
 	hud.set_wanted(heat.stars, heat.just_ranked)
 	heat.just_ranked = 0
 	var spd := -1.0

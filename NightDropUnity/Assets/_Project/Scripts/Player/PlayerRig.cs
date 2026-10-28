@@ -1,3 +1,4 @@
+using NightDrop.Combat;
 using UnityEngine;
 
 namespace NightDrop.Player
@@ -10,6 +11,8 @@ namespace NightDrop.Player
         {
             if (PlayerController.Instance != null)
             {
+                if (PlayerController.Instance.GetComponent<PlayerCombat>() == null)
+                    PlayerController.Instance.gameObject.AddComponent<PlayerCombat>();
                 PlayerController.Instance.gameObject.SetActive(true);
                 if (ThirdPersonCamera.CameraRoot != null)
                     ThirdPersonCamera.CameraRoot.SetActive(true);
@@ -28,7 +31,9 @@ namespace NightDrop.Player
             cc.stepOffset = 0.3f;
             cc.minMoveDistance = 0f;
 
+            root.AddComponent<Health>();
             var player = root.AddComponent<PlayerController>();
+            root.AddComponent<PlayerCombat>();
             BuildBody(root.transform);
 
             var lookAt = new GameObject("LookAt");
@@ -43,6 +48,8 @@ namespace NightDrop.Player
             if (PlayerController.Instance != null)
             {
                 PlayerController.Instance.ForceExitVehicle();
+                if (PlayerController.Instance.Health != null)
+                    PlayerController.Instance.Health.Revive();
                 PlayerController.Instance.gameObject.SetActive(false);
             }
             if (ThirdPersonCamera.CameraRoot != null)

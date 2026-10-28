@@ -1,4 +1,5 @@
 using NightDrop.AI;
+using NightDrop.Combat;
 using NightDrop.Managers;
 using NightDrop.Vehicles;
 using UnityEngine;
@@ -27,10 +28,12 @@ namespace NightDrop.Player
         VehicleController _vehicle;
         Transform _lookAt;
         Renderer[] _renderers;
+        Vector3 _spawn;
 
         public bool InWater => _inWater;
         public bool IsGrounded => _cc != null && _cc.isGrounded;
         public bool InVehicle => _vehicle != null;
+        public Health Health { get; private set; }
 
         public void SetInWater(bool on) => _inWater = on;
 
@@ -38,6 +41,10 @@ namespace NightDrop.Player
         {
             Instance = this;
             _cc = GetComponent<CharacterController>();
+            Health = GetComponent<Health>();
+            if (Health == null)
+                Health = gameObject.AddComponent<Health>();
+            _spawn = transform.position;
             _lookAt = transform.Find("LookAt");
             _renderers = GetComponentsInChildren<Renderer>(true);
         }
@@ -50,6 +57,9 @@ namespace NightDrop.Player
 
         void Update()
         {
+            if (Health != null && Health.Dead)
+                return;
+
             var input = MobileInput.Instance;
             if (input != null && input.InteractPressed)
                 TryInteract();
@@ -138,6 +148,19 @@ namespace NightDrop.Player
         {
             if (_vehicle != null)
                 ExitVehicle();
+        }
+
+        public void Respawn()
+        {
+            ForceExitVehicle();
+            if (_cc != null)
+                _cc.enabled = false;
+            transform.position = _spawn;
+            if (_cc != null)
+                _cc.enabled = true;
+            _vertical = 0f;
+            Health?.Revive();
+            HeatSystem.Instance?.ResetHeat();
         }
 
         void TryInteract()
