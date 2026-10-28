@@ -855,7 +855,8 @@ func collect_pickup(kind: int, amount: int) -> void:
 
 
 func _sync_hud() -> void:
-	hud.set_wanted(heat.stars)
+	hud.set_wanted(heat.stars, heat.just_ranked)
+	heat.just_ranked = 0
 	var spd := -1.0
 	if active_aircraft:
 		spd = absf(active_aircraft.speed)
