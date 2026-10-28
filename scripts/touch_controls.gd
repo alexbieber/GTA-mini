@@ -9,6 +9,17 @@ var interact_pressed := false
 var punch_pressed := false
 var handbrake := false
 var driving := false
+var jump_pressed := false
+var sprint := false
+var firing := false
+var was_firing := false
+var aiming := false
+var reload_pressed := false
+var crouch_pressed := false
+var cover_pressed := false
+var plate_pressed := false
+var view_pressed := false
+var _combat_buttons: Array[Button] = []
 
 var _stick_id := -1
 var _look_id := -1
@@ -22,6 +33,8 @@ var _enter_btn: Button
 var _gas_btn: Button
 var _brake_btn: Button
 var _punch_btn: Button
+var _jump_btn: Button
+var _sprint_btn: Button
 var _hint: Label
 
 
@@ -57,12 +70,33 @@ func _on_action_down() -> void:
 		punch_pressed = true
 
 
+func consume_jump() -> bool:
+	var v := jump_pressed
+	jump_pressed = false
+	return v
+
+
 func _on_action_up() -> void:
 	handbrake = false
 
 
 func set_driving(on: bool) -> void:
+	firing = false
+	was_firing = false
+	aiming = false
+	reload_pressed = false
+	crouch_pressed = false
+	cover_pressed = false
+	plate_pressed = false
+	view_pressed = false
+	for button in _combat_buttons:
+		button.visible = not on
 	driving = on
+	jump_pressed = false
+	sprint = false
+	if _jump_btn:
+		_jump_btn.visible = not on
+		_sprint_btn.visible = not on
 	if _gas_btn:
 		_gas_btn.visible = on
 		_brake_btn.visible = on
@@ -119,6 +153,33 @@ func _build() -> void:
 	_punch_btn.button_down.connect(_on_action_down)
 	_punch_btn.button_up.connect(_on_action_up)
 	_root.add_child(_punch_btn)
+
+	_jump_btn = _action_button("JUMP", Vector2(-168, -322))
+	_jump_btn.pressed.connect(func() -> void: jump_pressed = true)
+	_root.add_child(_jump_btn)
+	_sprint_btn = _action_button("RUN", Vector2(-300, -322))
+	_sprint_btn.button_down.connect(func() -> void: sprint = true)
+	_sprint_btn.button_up.connect(func() -> void: sprint = false)
+	_root.add_child(_sprint_btn)
+	var fire_btn := _action_button("FIRE", Vector2(-168, -424))
+	fire_btn.button_down.connect(func() -> void: firing = true)
+	fire_btn.button_up.connect(func() -> void: firing = false)
+	var aim_btn := _action_button("ADS", Vector2(-300, -424))
+	aim_btn.button_down.connect(func() -> void: aiming = true)
+	aim_btn.button_up.connect(func() -> void: aiming = false)
+	var reload_btn := _action_button("RELOAD", Vector2(-432, -322))
+	reload_btn.pressed.connect(func() -> void: reload_pressed = true)
+	var crouch_btn := _action_button("CROUCH", Vector2(-432, -220))
+	crouch_btn.pressed.connect(func() -> void: crouch_pressed = true)
+	var cover_btn := _action_button("COVER", Vector2(-432, -424))
+	cover_btn.pressed.connect(func() -> void: cover_pressed = true)
+	var plate_btn := _action_button("PLACA", Vector2(-432, -118))
+	plate_btn.pressed.connect(func() -> void: plate_pressed = true)
+	var view_btn := _action_button("VISTA", Vector2(-564, -118))
+	view_btn.pressed.connect(func() -> void: view_pressed = true)
+	_combat_buttons.assign([fire_btn, aim_btn, reload_btn, crouch_btn, cover_btn, plate_btn, view_btn])
+	for button in _combat_buttons:
+		_root.add_child(button)
 
 	_hint = Label.new()
 	_hint.text = "Left stick move · drag right to look"
@@ -233,7 +294,7 @@ func _reset_knob() -> void:
 
 
 func _over_buttons(pos: Vector2) -> bool:
-	for b in [_enter_btn, _gas_btn, _brake_btn, _punch_btn]:
+	for b in [_enter_btn, _gas_btn, _brake_btn, _punch_btn, _jump_btn, _sprint_btn]:
 		if b and b.visible and b.get_global_rect().has_point(pos):
 			return true
 	return false

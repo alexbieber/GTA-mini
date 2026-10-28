@@ -6,6 +6,7 @@ var phase: Phase = Phase.TITLE
 var money := 420
 var packages_left := 3
 var _stolen := false
+var _delivered := false
 var _bust_timer := 0.0
 var _end_timer := 0.0
 var _spray_cd := 0.0
@@ -28,6 +29,8 @@ var _firing := false
 var beacon: MeshInstance3D
 var last_seen_mark: Marker3D
 var roads: RoadGraph
+var shot_effects: ShotEffects
+var matches: MatchManager
 
 
 func get_wanted() -> int:
@@ -35,6 +38,11 @@ func get_wanted() -> int:
 
 
 func radar_objective() -> Vector3:
+	if matches and matches.competitive():
+		if matches.zone:
+			return matches.zone.center
+		var carried := matches.rules.carried_by(0)
+		return matches.arena.bases[1] if carried else matches.arena.bases[0]
 	match phase:
 		Phase.STEAL:
 			return coupe.global_position if coupe else Vector3.ZERO
@@ -49,6 +57,9 @@ func radar_objective() -> Vector3:
 
 
 func _ready() -> void:
+	CombatInput.install()
+	shot_effects = ShotEffects.new()
+	add_child(shot_effects)
 	randomize()
 	city = City.new()
 	add_child(city)
@@ -115,6 +126,15 @@ func _ready() -> void:
 	clock.apply(false)
 	hud.set_time_of_day(false)
 	_sync_hud()
+	matches = MatchManager.new()
+	matches.game = self
+	add_child(matches)
+	matches.announcer.subtitle_changed.connect(hud.set_subtitle)
+
+func start_mode(mode: int) -> void:
+	matches.start(mode)
+	if mode == MatchRules.Mode.FREE:
+		_sync_hud()
 
 
 func _make_cop(pos: Vector3, idx: int) -> Vehicle:
@@ -191,6 +211,16 @@ func begin() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if matches and phase != Phase.TITLE and event.is_action_pressed("return_menu"):
+		matches.return_menu()
+		return
+	if matches and matches.competitive():
+		if event.is_action_pressed("drop_objective"):
+			matches.rules.drop(0)
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F6:
+		clock.set_quality((clock.quality + 1) % 3)
+		hud.set_banner("GRAPHICS: " + GraphicsProfile.label(clock.quality))
+		get_tree().create_timer(2.4).timeout.connect(func() -> void: hud.set_banner(""))
 	if event is InputEventKey and event.pressed and event.keycode == KEY_N:
 		clock.toggle()
 		hud.set_time_of_day(clock.is_night)
@@ -205,16 +235,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		if not DisplayServer.is_touchscreen_available() and phase not in [Phase.TITLE, Phase.BUSTED, Phase.WASTED]:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	if event is InputEventKey and event.pressed and event.keycode == KEY_E:
+	if event.is_action_pressed("interact"):
 		_try_interact()
+	if event.is_action_pressed("reload") and phase not in [Phase.BUSTED, Phase.WASTED]:
+		player.request_reload()
+	if event.is_action_pressed("swap_shoulder") and not player.in_vehicle:
+		camera.shoulder *= -1.0
+	if event.is_action_pressed("jump") or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE):
+		player.request_jump()
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F:
 		_try_punch()
 	if event is InputEventKey and event.pressed and event.keycode == KEY_R and phase in [Phase.BUSTED, Phase.WASTED]:
 		_respawn()
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if event.is_action_pressed("fire"):
 		_firing = true
 		_try_fire()
-	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if event.is_action_released("fire"):
 		_firing = false
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
 		player.cycle_weapon(1)
@@ -246,6 +282,21 @@ func _process(delta: float) -> void:
 			_try_interact()
 	if touch.consume_punch():
 		_try_punch()
+	if touch.consume_jump():
+		player.request_jump()
+	if touch.reload_pressed:
+		touch.reload_pressed = false
+		player.request_reload()
+	if touch.crouch_pressed:
+		touch.crouch_pressed = false
+		player.request_crouch()
+	if touch.firing and not touch.was_firing:
+		_try_fire()
+	touch.was_firing = touch.firing
+	if matches and matches.competitive():
+		if matches.rules.state == MatchRules.State.ACTIVE and (_firing or touch.firing) and player.weapon != Arsenal.Id.NONE and Arsenal.data(player.weapon).automatic:
+			_try_fire()
+		return
 
 	if phase in [Phase.BUSTED, Phase.WASTED]:
 		_end_timer += delta
@@ -264,13 +315,15 @@ func _process(delta: float) -> void:
 	_check_wasted()
 	_update_beacon()
 	_update_base(delta)
-	if _firing and player.weapon == Arsenal.Id.SMG:
+	if (_firing or touch.firing) and player.weapon != Arsenal.Id.NONE and Arsenal.data(player.weapon).automatic:
 		_try_fire()
 	_sync_hud()
 
 
 func _try_interact() -> void:
 	if player.locked:
+		return
+	if matches and matches.competitive() and matches.interact_player():
 		return
 	if active_aircraft:
 		_exit_aircraft()
@@ -321,6 +374,7 @@ func _nearest_enterable() -> Vehicle:
 
 
 func _enter_vehicle(v: Vehicle) -> void:
+	_firing = false
 	var driver := v.eject_driver()
 	if driver:
 		player.locked = true
@@ -367,6 +421,7 @@ func _nearest_aircraft() -> Aircraft:
 
 
 func _enter_aircraft(jet: Aircraft) -> void:
+	_firing = false
 	active_aircraft = jet
 	jet.occupied = true
 	player.in_vehicle = true
@@ -470,20 +525,31 @@ func _try_fire() -> void:
 		return
 	var origin := cam.global_position
 	var dir := -cam.global_transform.basis.z
-	dir += cam.global_transform.basis.x * randf_range(-spec["spread"], spec["spread"])
-	dir += cam.global_transform.basis.y * randf_range(-spec["spread"], spec["spread"])
+	var data := Arsenal.data(player.weapon)
+	var spread := data.spread * (data.ads_spread_multiplier if player.aiming else 1.0)
+	if Vector2(player.velocity.x, player.velocity.z).length() > 0.5:
+		spread *= data.moving_spread_multiplier
+	dir += cam.global_transform.basis.x * randf_range(-spread, spread)
+	dir += cam.global_transform.basis.y * randf_range(-spread, spread)
 	dir = dir.normalized()
-	var dest := origin + dir * float(spec["range"])
-	var q := PhysicsRayQueryParameters3D.create(origin, dest, 1 | 4 | 8 | 16)
-	q.exclude = [player.get_rid()]
-	var hit := get_world_3d().direct_space_state.intersect_ray(q)
-	var end := dest
+	var muzzle := player.global_position + Vector3.UP * (0.95 if player.crouched else 1.4)
+	var result := Hitscan.cast(get_world_3d(), origin, dir, muzzle, data.effective_range, [player.get_rid()])
+	var hit: Dictionary = result.hit
+	var end: Vector3 = result.end
 	if hit:
 		end = hit.position
 		var col = hit.collider
-		if col is Pedestrian:
+		if col is Player and matches and matches.competitive():
+			var height: float = hit.position.y - col.global_position.y
+			var multiplier := data.head_multiplier if height > 1.3 else (data.limb_multiplier if height < 0.6 else 1.0)
+			if matches.apply_hit(0, col, data.damage * multiplier):
+				hud.confirm_hit()
+		elif col is Pedestrian:
 			var ped := col as Pedestrian
-			ped.knock_down()
+			var hit_height: float = hit.position.y - ped.global_position.y
+			var region := data.head_multiplier if hit_height > 1.3 else (data.limb_multiplier if hit_height < 0.6 else 1.0)
+			ped.take_damage(data.damage, region)
+			hud.confirm_hit()
 			_scare_nearby(ped.global_position)
 			if ped.is_officer:
 				_report("shoot_cop", ped.global_position)
@@ -500,21 +566,14 @@ func _try_fire() -> void:
 			_report("gunfire", end)
 	else:
 		_report("gunfire", player.global_position)
-	_tracer(origin + dir * 1.2, end)
-	camera.add_shake(0.035)
+	_scare_nearby(player.global_position)
+	_tracer(muzzle, end)
+	camera.kick(data)
+	camera.add_shake(0.012)
 
 
 func _tracer(from: Vector3, to: Vector3) -> void:
-	var mesh := MeshInstance3D.new()
-	var im := ImmediateMesh.new()
-	var mat := Palette.mat(Color("fff2c0"), 0.0, 0.2, Color("fff2c0"), 6.0)
-	im.surface_begin(Mesh.PRIMITIVE_LINES, mat)
-	im.surface_add_vertex(from)
-	im.surface_add_vertex(to)
-	im.surface_end()
-	mesh.mesh = im
-	add_child(mesh)
-	get_tree().create_timer(0.06).timeout.connect(mesh.queue_free)
+	shot_effects.emit_shot(from, to)
 
 
 func _update_base(delta: float) -> void:
@@ -546,6 +605,8 @@ func _exit_vehicle() -> void:
 
 
 func _report(crime: String, pos: Vector3) -> void:
+	if matches and matches.competitive():
+		return
 	var added := heat.report(crime, _witnessed(pos))
 	if added > 0:
 		hud.set_crime(heat.label())
@@ -557,7 +618,7 @@ func _witnessed(pos: Vector3) -> bool:
 			return true
 	for node in get_tree().get_nodes_in_group("peds"):
 		var ped := node as Pedestrian
-		if ped and not ped.downed and ped.global_position.distance_to(pos) < 11.0:
+		if ped and not ped.downed and ped.global_position.distance_to(pos) < 11.0 and WantedSystem.has_los(get_world_3d(), ped.global_position, pos):
 			return true
 	return false
 
@@ -688,6 +749,7 @@ func _update_mission() -> void:
 		phase = Phase.HEAT
 	if _stolen and city.garage_contains(coupe) and heat.stars == 0 and phase == Phase.DELIVER:
 		phase = Phase.FREE
+		_delivered = true
 		money += 800
 		player.locked = false
 		hud.set_banner("DROP COMPLETE  +$800")
@@ -737,6 +799,8 @@ func _check_wasted() -> void:
 
 
 func _set_down(p: Phase, banner: String) -> void:
+	_firing = false
+	player.reset_combat()
 	phase = p
 	player.locked = true
 	if active_vehicle:
@@ -769,7 +833,7 @@ func _respawn() -> void:
 		player.global_position = city.hospital_pos + Vector3(0, 0.2, 4)
 	camera.follow = player
 	camera.set_vehicle_mode(false)
-	phase = Phase.FREE if _stolen else Phase.STEAL
+	phase = Phase.FREE if _delivered else (Phase.DELIVER if _stolen else Phase.STEAL)
 	hud.set_banner("")
 	if not DisplayServer.is_touchscreen_available():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -798,6 +862,7 @@ func _sync_hud() -> void:
 	elif active_vehicle:
 		spd = absf(active_vehicle.speed)
 	hud.set_stats(player.health, money, player.weapon_label(), spd)
+	hud.set_combat(player.weapon != Arsenal.Id.NONE and not player.in_vehicle and not player.locked, player.aiming, Vector2(player.velocity.x, player.velocity.z).length())
 	var near := _nearest_enterable()
 	var jet := _nearest_aircraft()
 	if active_aircraft:

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+label = "ESCOPETA"
+damage = 15.0
+effective_range = 35.0
+falloff_start = 8.0
+minimum_damage_ratio = 0.2
+pellet_count = 8
+shot_interval = 0.85
+magazine_size = 6
+starting_ammo = 24
+reload_seconds = 2.4
+spread = 0.055
+ads_spread_multiplier = 0.7
+moving_spread_multiplier = 1.4
+recoil_vertical = 0.07
+recoil_horizontal = 0.012
+aim_seconds = 0.22
+mobility = 0.92
+head_multiplier = 1.5
+limb_multiplier = 0.8
+price = 750

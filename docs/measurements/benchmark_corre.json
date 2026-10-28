@@ -1,0 +1,18 @@
+{
+	"alive": 8,
+	"average_fps": 60.0062065275691,
+	"draw_calls_last_frame": 145.0,
+	"eliminations": 6,
+	"engine_peak_static_memory_bytes": 51603636.0,
+	"engine_static_memory_bytes": 51170774.0,
+	"match_load_ms": 181,
+	"menu_load_ms": 521,
+	"mode": "corre",
+	"p95_frame_ms": 17.297,
+	"pid": 14460,
+	"sample_seconds": 30.013562,
+	"score": [
+		0,
+		0
+	]
+}
