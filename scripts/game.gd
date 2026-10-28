@@ -550,7 +550,6 @@ func _try_fire() -> void:
 			var region := data.head_multiplier if hit_height > 1.3 else (data.limb_multiplier if hit_height < 0.6 else 1.0)
 			ped.take_damage(data.damage, region)
 			hud.confirm_hit()
-			_scare_nearby(ped.global_position)
 			if ped.is_officer:
 				_report("shoot_cop", ped.global_position)
 			else:
@@ -566,6 +565,7 @@ func _try_fire() -> void:
 			_report("gunfire", end)
 	else:
 		_report("gunfire", player.global_position)
+	# Every fired shot is the warning: hits and misses produce one witness reaction.
 	_scare_nearby(player.global_position)
 	_tracer(muzzle, end)
 	camera.kick(data)
